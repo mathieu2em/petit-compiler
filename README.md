@@ -9,6 +9,6 @@
 - [ ] writing the report
 
 ###### IMPORTANT:
-no duplication of integers values . (c’est-à-dire avoir que i et j contiennent des pointeurs vers des grand_entier
+no duplication of integers values . (c’est-à-dire qu'il ne faut pas avoir que i et j contiennent des pointeurs vers des grand_entier
 différents avec les mêmes chiffres)
 
