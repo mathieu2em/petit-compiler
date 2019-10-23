@@ -22,22 +22,20 @@ typedef struct cellule {
 
 // on veut une fonction qui initialise un nouveau bignum dans la memoire.
 // il l'initialise avec aucun caractere a l'interieur.
-BIG_NUM *new_big_num()
+// TODO pas certain si on devrais utiliser le * ici ou pas dans la declar et return
+BIG_NUM new_big_num()
 {
-  BIG_NUM *bn = malloc(sizeof(BIG_NUM)); // vrm pas certain de ces mallocs
-  bn->negatif = 0;
-  CELL *c = NULL;
-  bn->chiffres = c; 
+  BIG_NUM bn = {0,NULL}; 
   return bn;
 }
 // cette methode rajoute un caractere a un bignum existant (MAYBE LOL)
 // TODO not sure if it works
-BIG_NUM *new_num(BIG_NUM *bn, char k)
+BIG_NUM new_num(BIG_NUM bn, char k)
 {
   CELL *cell = malloc(sizeof(CELL));
   cell->chiffre = k;
-  cell->suivant = bn->chiffres;
-  bn->chiffres = cell;
+  cell->suivant = bn.chiffres;
+  bn.chiffres = cell;
   return bn;
 }  
 /* Analyseur lexical. */
@@ -49,7 +47,8 @@ char *words[] = { "do", "else", "if", "while", NULL };
 
 int ch = ' ';
 int sym;
-int int_val;// changer pour BIGNUM ?
+//int int_val;// changer pour BIGNUM ?
+BIG_NUM big_num;
 char id_name[100];
 
 void syntax_error() { fprintf(stderr, "syntax error\n"); exit(1); }
@@ -76,7 +75,7 @@ void next_sym()
             //int_val = 0; /* overflow? */
 	    
 	    // on a un chiffre donc on initialise un bignum
-	    BIG_NUM *bg = new_big_num();
+	    big_num = new_big_num();
 	    
             while (ch >= '0' && ch <= '9')
               {
@@ -84,7 +83,7 @@ void next_sym()
 
 		//tant qu'il y a des chiffres on les rajoute au bignum
 		// TODO faut voir comment le traiter maintenant quon a plus int_val
-		new_num(bg, ch);
+		new_num(big_num, ch);
                 next_ch();
               }
 
