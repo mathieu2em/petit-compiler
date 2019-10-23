@@ -7,7 +7,41 @@
 #include <string.h>
 
 /*---------------------------------------------------------------------------*/
+/* Grands entiers Structure */
 
+
+typedef struct grand_entier {
+  int negatif;
+  struct cellule *chiffres;
+} BIG_NUM;
+
+typedef struct cellule {
+    char chiffre;
+    struct cellule *suivant;
+} CELL;
+
+// on veut une fonction qui initialise un nouveau bignum dans la memoire.
+// il l'initialise avec un seul charactere a linterieur.
+BIG_NUM *new_big_num(char k)
+{
+  BIG_NUM *bn = malloc(sizeof(BIG_NUM)); // vrm pas certain de ces mallocs
+  bn->negatif = 0;
+  CELL *c = malloc(sizeof(CELL)); // vrm pas certain de ces mallocs
+  c->chiffre = k;
+  c->suivant = NULL;
+  bn->chiffres = c; 
+  return bn;
+}
+// cette methode rajoute un caractere a un bignum existant (MAYBE LOL)
+// TODO not sure if it works
+BIG_NUM *new_num(BIG_NUM *bn, char k)
+{
+  CELL *cell = malloc(sizeof(CELL));
+  cell->chiffre = k;
+  cell->suivant = bn->chiffres;
+  bn->chiffres = cell;
+  return bn;
+}  
 /* Analyseur lexical. */
 
 enum { DO_SYM, ELSE_SYM, IF_SYM, WHILE_SYM, LBRA, RBRA, LPAR,
@@ -17,7 +51,7 @@ char *words[] = { "do", "else", "if", "while", NULL };
 
 int ch = ' ';
 int sym;
-int int_val;
+int int_val;// changer pour BIGNUM ?
 char id_name[100];
 
 void syntax_error() { fprintf(stderr, "syntax error\n"); exit(1); }
@@ -42,6 +76,7 @@ void next_sym()
         if (ch >= '0' && ch <= '9')
           {
             int_val = 0; /* overflow? */
+	    BIG_NUM bg = new_big_num(ch);
 
             while (ch >= '0' && ch <= '9')
               {
