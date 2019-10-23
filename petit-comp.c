@@ -21,14 +21,12 @@ typedef struct cellule {
 } CELL;
 
 // on veut une fonction qui initialise un nouveau bignum dans la memoire.
-// il l'initialise avec un seul charactere a linterieur.
-BIG_NUM *new_big_num(char k)
+// il l'initialise avec aucun caractere a l'interieur.
+BIG_NUM *new_big_num()
 {
   BIG_NUM *bn = malloc(sizeof(BIG_NUM)); // vrm pas certain de ces mallocs
   bn->negatif = 0;
-  CELL *c = malloc(sizeof(CELL)); // vrm pas certain de ces mallocs
-  c->chiffre = k;
-  c->suivant = NULL;
+  CELL *c = NULL;
   bn->chiffres = c; 
   return bn;
 }
@@ -75,12 +73,18 @@ void next_sym()
       default:
         if (ch >= '0' && ch <= '9')
           {
-            int_val = 0; /* overflow? */
-	    BIG_NUM bg = new_big_num(ch);
-
+            //int_val = 0; /* overflow? */
+	    
+	    // on a un chiffre donc on initialise un bignum
+	    BIG_NUM *bg = new_big_num();
+	    
             while (ch >= '0' && ch <= '9')
               {
-                int_val = int_val*10 + (ch - '0');
+                //int_val = int_val*10 + (ch - '0');
+
+		//tant qu'il y a des chiffres on les rajoute au bignum
+		// TODO faut voir comment le traiter maintenant quon a plus int_val
+		new_num(bg, ch);
                 next_ch();
               }
 
