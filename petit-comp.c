@@ -487,22 +487,75 @@ int main()
 }
 
 /*---------------------------------------------------------------------------*/
-/*
+
 //Algo de petite ecole
 //[12,23,ADD] Pile
 //s[courant] == ADD
 //sp[-2] = 12 (pointeur vers un GE)
 //sp[-1] = 23 ((pointeur vers un GE)
-int IADD()
+//TODO il y a une meilleur de le faire avec quelque chose de recursif
+BIG_NUM addition()
 {
-  num1 = sp[-2]
-  num2 = sp[-1]
+  BIG_NUM bn1 = sp[-2];//En attribu? direct?
+  BIG_NUM bn2 = sp[-1];
   
+  BIG_NUM resultat;
+
+  int chiffre1;
+  int chiffre2;
+  int ch_re;
+  CELL *cell1 = bn1.chiffres;
+  CELL *cell2 = bn2.chiffres;
+
+  //Si un des num est 0
+  if(cell1 == NULL){
+    return bn2;
+  }else if(cell2 == NULL){
+    return bn1;
+  }
+  
+  int reste = 0;
+  
+  while(cell1 != NULL){
+    if(cell2 != NULL){
+      chiffre1 = char_to_int(cell1->chiffre);
+      chiffre2 = char_to_int(cell2->chiffre);
+
+      add_big_num(resultat, chiffre1,chiffre2, reste);
+      
+      new_num(resultat,ch_re);
+      cell1 = cell1->suivant;
+      cell2 = cell2->suivant;
+    }else{
+      chiffre1 = char_to_int(cell1->chiffre);
+      chiffre2 = 0;
+      
+      add_big_num(resultat, chiffre1,chiffre2, reste);
+      
+      cell1 = cell1->suivant;
+    }
+  }
+  while(cell2 != NULL){//Si le 2e chiffre est plus grand que le premier
+    chiffre1 = char_to_int(cell2->chiffre);
+    chiffre2 = 0;
+       
+    add_big_num(resultat, chiffre1,chiffre2, reste);
+    
+    cell2 = cell2->suivant;
+  }
+  if(reste == 1){//Si il restait une retenue
+     new_num(resultat,ch_re);
+  }
+  return resultat;
 }
 
-int SUB()
-{
-
-
+void add_big_num(BIG_NUM resultat, int chiffre1, int chiffre2, int reste){
+  int ch_re = chiffre1 + chiffre2 + reste;
+  if(ch_re >= 10){
+    reste = 1;
+    ch_re = ch_re % 10;//recupere le chiffre le moin significatif
+  }else{
+    reste = 0;
+  }
+  new_num(resultat,ch_re);
 }
-*/
