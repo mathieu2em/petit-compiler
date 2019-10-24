@@ -9,7 +9,6 @@
 /*---------------------------------------------------------------------------*/
 /* Grands entiers Structure */
 
-
 typedef struct grand_entier {
   int negatif;
   struct cellule *chiffres;
@@ -37,7 +36,8 @@ BIG_NUM new_num(BIG_NUM bn, char k)
   cell->suivant = bn.chiffres;
   bn.chiffres = cell;
   return bn;
-}  
+}
+
 /* Analyseur lexical. */
 
 enum { DO_SYM, ELSE_SYM, IF_SYM, WHILE_SYM, LBRA, RBRA, LPAR,
@@ -49,7 +49,7 @@ int ch = ' ';
 int sym;
 //int int_val;// changer pour BIGNUM ?
 BIG_NUM big_num;
-char id_name[100];
+char id_name[100]; // 27?
 
 void syntax_error() { fprintf(stderr, "syntax error\n"); exit(1); }
 
@@ -73,19 +73,31 @@ void next_sym()
         if (ch >= '0' && ch <= '9')
           {
             //int_val = 0; /* overflow? */
-	    
+
 	    // on a un chiffre donc on initialise un bignum
 	    big_num = new_big_num();
-	    
+
+	    int count = 1;
+	    //CELL *last_elem = big_num.chiffres; TODO pointeur vers derniere element
+
             while (ch >= '0' && ch <= '9')
               {
                 //int_val = int_val*10 + (ch - '0');
-
+		// increment the counter of elements
+		count++;
 		//tant qu'il y a des chiffres on les rajoute au bignum
 		// TODO faut voir comment le traiter maintenant quon a plus int_val
 		new_num(big_num, ch);
                 next_ch();
               }
+	    // verify special case 0
+	    if (count == 1 && big_num.chiffres->chiffre == 0)
+	      { // reset big num to NULL value which is 0
+		big_num = new_big_num();
+	      }
+	    else
+	      {
+	    //TODO verifier cas zeros a la fin
 
             sym = INT;
           }
@@ -154,7 +166,7 @@ node *term() /* <term> ::= <id> | <int> | <paren_expr> */
   else if (sym == INT)     /* <term> ::= <int> */
     {
       x = new_node(CST);
-      x->val = int_val;
+      x->val = &big_num; // TODO BIG_NUM
       next_sym();
     }
   else                     /* <term> ::= <paren_expr> */
