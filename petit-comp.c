@@ -47,7 +47,7 @@ char *words[] = { "do", "else", "if", "while", NULL };
 
 int ch = ' ';
 int sym;
-//int int_val;// changer pour BIGNUM ?
+//int int_val;
 BIG_NUM big_num;
 char id_name[100]; // 27?
 
@@ -77,7 +77,7 @@ void next_sym()
 	    // on a un chiffre donc on initialise un bignum
 	    big_num = new_big_num();
 
-	    int count = 1;
+	    int count = 0;
 	    //CELL *last_elem = big_num.chiffres; TODO pointeur vers derniere element
 
             while (ch >= '0' && ch <= '9')
@@ -97,9 +97,9 @@ void next_sym()
 	      }
 	    else
 	      {
-	    //TODO verifier cas zeros a la fin
 
             sym = INT;
+              }
           }
         else if (ch >= 'a' && ch <= 'z')
           {
@@ -320,7 +320,7 @@ typedef signed char code;
 
 code object[1000], *here = object;
 
-void gen(code c) { *here++ = c; } /* overflow? */
+void gen(code c) { *here++ = c; } /* overflow? */ //rempli la pile de la MC
 
 #ifdef SHOW_CODE
 #define g(c) do { printf(" %d",c); gen(c); } while (0)
@@ -332,7 +332,7 @@ void gen(code c) { *here++ = c; } /* overflow? */
 
 void fix(code *src, code *dst) { *src = dst-src; } /* overflow? */
 
-void c(node *x)
+void c(node *x) //Premiere etape, cree un array avec la liste des operations
 { switch (x->kind)
     { case VAR   : gi(ILOAD); g(x->val); break;
 
@@ -401,7 +401,7 @@ int globals[26];
 
 void run()
 {
-  int stack[1000], *sp = stack; /* overflow? */
+  int stack[1000], *sp = stack; /* overflow? */ //pile
   code *pc = object;
 
   for (;;)
@@ -412,8 +412,8 @@ void run()
         case BIPUSH: *sp++ = *pc++;                      break;
         case DUP   : sp++; sp[-1] = sp[-2];              break;
         case POP   : --sp;                               break;
-        case IADD  : sp[-2] = sp[-2] + sp[-1]; --sp;     break;
-        case ISUB  : sp[-2] = sp[-2] - sp[-1]; --sp;     break;
+          //case IADD  : sp[-2] = sp[-2] + sp[-1]; --sp;     break;TODO changer IADD
+          //case ISUB  : sp[-2] = sp[-2] - sp[-1]; --sp;     break;TODO changer ISUB
         case GOTO  : pc += *pc;                          break;
         case IFEQ  : if (*--sp==0) pc += *pc; else pc++; break;
         case IFNE  : if (*--sp!=0) pc += *pc; else pc++; break;
@@ -430,18 +430,18 @@ int main()
 {
   int i;
 
-  c(program());
+  c(program());//Cree la liste des operations
 
 #ifdef SHOW_CODE
   printf("\n");
 #endif
 
-  for (i=0; i<26; i++)
+  for (i=0; i<26; i++) // Initie la liste des variables globales
     globals[i] = 0;
 
-  run();
+  run(); //Fait les operations etapes par etapes selon la pile cree dans c(programs())
 
-  for (i=0; i<26; i++)
+  for (i=0; i<26; i++)//TODO doit enlever eventuellement
     if (globals[i] != 0)
       printf("%c = %d\n", 'a'+i, globals[i]);
 
@@ -449,3 +449,22 @@ int main()
 }
 
 /*---------------------------------------------------------------------------*/
+/*
+//Algo de petite ecole
+//[12,23,ADD] Pile
+//s[courant] == ADD
+//sp[-2] = 12 (pointeur vers un GE)
+//sp[-1] = 23 ((pointeur vers un GE)
+int IADD()
+{
+  num1 = sp[-2]
+  num2 = sp[-1]
+  
+}
+
+int SUB()
+{
+
+
+}
+*/
