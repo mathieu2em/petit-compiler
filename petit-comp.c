@@ -24,6 +24,18 @@ int char_to_int(char c)
 {
   return c - '0';
 }
+// returns a pointer to last non-NULL cell of a big num
+CELL* last_cell(BIG_NUM bn){
+  CELL *cell = bn.chiffres;
+  if(cell != NULL){
+    while(cell->suivant != NULL){
+      cell = cell->suivant;
+    }
+    return cell;
+  } else {
+    return cell;
+  }
+}
 // on veut une fonction qui initialise un nouveau bignum dans la memoire.
 // il l'initialise avec aucun caractere a l'interieur.
 // TODO pas certain si on devrais utiliser le * ici ou pas dans la declar et return
@@ -43,8 +55,8 @@ BIG_NUM new_num(BIG_NUM bn, char k)
   return bn;
 }
 // verify if big_num has zeros at the start and if so 
-//BIG_NUM verify_zero(BIG_NUM bn)
-//{
+BIG_NUM verify_zero(BIG_NUM bn)
+{
   
 
 /* Analyseur lexical. */
