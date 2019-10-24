@@ -36,6 +36,23 @@ CELL* last_cell(BIG_NUM bn){
     return cell;
   }
 }
+// pop the last non-NULL cell of a big num1
+BIG_NUM pop_bn(BIG_NUM bn){
+  CELL *cell = bn.chiffres;
+  if(cell == NULL){
+    return bn;
+  } else if(cell->suivant==NULL){
+    bn.chiffres = NULL;
+    return bn;
+  } else {
+    while(cell->suivant->suivant != NULL){
+	cell = cell->suivant;
+      }
+      cell->suivant = NULL;
+      return bn;
+  }
+}
+
 // on veut une fonction qui initialise un nouveau bignum dans la memoire.
 // il l'initialise avec aucun caractere a l'interieur.
 // TODO pas certain si on devrais utiliser le * ici ou pas dans la declar et return
