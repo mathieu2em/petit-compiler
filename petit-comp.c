@@ -49,6 +49,7 @@ BIG_NUM *bn_pop(BIG_NUM *bn){
 	cell = cell->suivant;
       }
       cell->suivant = NULL;
+      free(cell->suivant);
       return bn;
   }
 }
@@ -58,7 +59,9 @@ BIG_NUM *bn_pop(BIG_NUM *bn){
 // TODO pas certain si on devrais utiliser le * ici ou pas dans la declar et return
 BIG_NUM *new_big_num()
 {
-  BIG_NUM *bn = malloc(sizeof(BIG_NUM)); 
+  BIG_NUM *bn = malloc(sizeof(BIG_NUM));
+  bn->negatif = 0;
+  bn->chiffres = NULL;
   return bn;
 }
 // cette methode rajoute un caractere a un bignum existant (MAYBE LOL)
@@ -79,6 +82,17 @@ BIG_NUM *bn_verif_correc_zero(BIG_NUM *bn)
       bn_pop(bn);
     }
   return bn;
+}
+
+void bn_print(BIG_NUM *bn)
+{
+  CELL *c = bn->chiffres;
+  while(c!=NULL)
+    {
+      printf("%c", c->chiffre);
+      c = c->suivant;
+    }
+  printf("\n");
 }
   
 
