@@ -64,8 +64,7 @@ BIG_NUM *new_big_num()
   bn->chiffres = NULL;
   return bn;
 }
-// cette methode rajoute un caractere a un bignum existant (MAYBE LOL)
-// TODO not sure if it works
+// cette methode rajoute un caractere a un bignum existant
 BIG_NUM *bn_new_num(BIG_NUM *bn, char k)
 {
   CELL *cell = malloc(sizeof(CELL));
@@ -74,7 +73,7 @@ BIG_NUM *bn_new_num(BIG_NUM *bn, char k)
   bn->chiffres = cell;
   return bn;
 }
-// verify if big_num has zeros at the start and if so 
+// verify if big_num has zeros at the start and if so
 BIG_NUM *bn_verif_correc_zero(BIG_NUM *bn)
 {
   while (bn_last_cell(bn)->chiffre=='0')
@@ -94,7 +93,7 @@ void bn_print(BIG_NUM *bn)
     }
   printf("\n");
 }
-  
+
 
 /* Analyseur lexical. */
 
@@ -128,25 +127,25 @@ void next_sym()
       case '=': sym = EQUAL; next_ch(); break;
       case EOF: sym = EOI;   next_ch(); break;
       default:
-        if (ch >= '0' && ch <= '9')
-          {
-            //int_val = 0; /* overflow? */
+	if (ch >= '0' && ch <= '9')
+	  {
+	    //int_val = 0; /* overflow? */
 
 	    // on a un chiffre donc on initialise un bignum
 	    big_num = new_big_num();
 
 	    int count = 0;
 
-            while (ch >= '0' && ch <= '9')
-              {
-                //int_val = int_val*10 + (ch - '0');
+	    while (ch >= '0' && ch <= '9')
+	      {
+		//int_val = int_val*10 + (ch - '0');
 		// increment the counter of elements
 		count++;
 		//tant qu'il y a des chiffres on les rajoute au bignum
 		// TODO faut voir comment le traiter maintenant quon a plus int_val
 		bn_new_num(big_num, ch);
-                next_ch();
-              }
+		next_ch();
+	      }
 	    // verify special case 0
 	    if (count == 1 && big_num->chiffres->chiffre == 0)
 	      { // reset big num to NULL value which is 0
@@ -159,29 +158,29 @@ void next_sym()
 	      }
 		sym = INT;
 
-          }
-        else if (ch >= 'a' && ch <= 'z')
-          {
-            int i = 0; /* overflow? */
+	  }
+	else if (ch >= 'a' && ch <= 'z')
+	  {
+	    int i = 0; /* overflow? */
 
-            while ((ch >= 'a' && ch <= 'z') || ch == '_')
-              {
-                id_name[i++] = ch;
-                next_ch();
-              }
+	    while ((ch >= 'a' && ch <= 'z') || ch == '_')
+	      {
+		id_name[i++] = ch;
+		next_ch();
+	      }
 
-            id_name[i] = '\0';
-            sym = 0;
+	    id_name[i] = '\0';
+	    sym = 0;
 
-            while (words[sym]!=NULL && strcmp(words[sym], id_name)!=0)
-              sym++;
+	    while (words[sym]!=NULL && strcmp(words[sym], id_name)!=0)
+	      sym++;
 
-            if (words[sym] == NULL)
-              {
-                if (id_name[1] == '\0') sym = ID; else syntax_error();
-              }
-          }
-        else syntax_error();
+	    if (words[sym] == NULL)
+	      {
+		if (id_name[1] == '\0') sym = ID; else syntax_error();
+	      }
+	  }
+	else syntax_error();
     }
 }
 
@@ -310,10 +309,10 @@ node *statement()
       x->o1 = paren_expr();
       x->o2 = statement();
       if (sym == ELSE_SYM) /* ... "else" <stat> */
-        { x->kind = IF2;
-          next_sym();
-          x->o3 = statement();
-        }
+	{ x->kind = IF2;
+	  next_sym();
+	  x->o3 = statement();
+	}
     }
   else if (sym == WHILE_SYM) /* "while" <paren_expr> <stat> */
     {
@@ -341,12 +340,12 @@ node *statement()
       x = new_node(EMPTY);
       next_sym();
       while (sym != RBRA)
-        {
-          node *t = x;
-          x = new_node(SEQ);
-          x->o1 = t;
-          x->o2 = statement();
-        }
+	{
+	  node *t = x;
+	  x = new_node(SEQ);
+	  x->o1 = t;
+	  x->o2 = statement();
+	}
       next_sym();
     }
   else                     /* <expr> ";" */
@@ -402,53 +401,53 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
       case SUB   : c(x->o1); c(x->o2); gi(ISUB); break;
 
       case LT    : gi(BIPUSH); g(1);
-                   c(x->o1);
-                   c(x->o2);
-                   gi(ISUB);
-                   gi(IFLT); g(4);
-                   gi(POP);
-                   gi(BIPUSH); g(0); break;
+		   c(x->o1);
+		   c(x->o2);
+		   gi(ISUB);
+		   gi(IFLT); g(4);
+		   gi(POP);
+		   gi(BIPUSH); g(0); break;
 
       case ASSIGN: c(x->o2);
-                   gi(DUP);
-                   gi(ISTORE); g(x->o1->val); break;
+		   gi(DUP);
+		   gi(ISTORE); g(x->o1->val); break;
 
       case IF1   : { code *p1;
-                     c(x->o1);
-                     gi(IFEQ); p1 = here++;
-                     c(x->o2); fix(p1,here); break;
-                   }
+		     c(x->o1);
+		     gi(IFEQ); p1 = here++;
+		     c(x->o2); fix(p1,here); break;
+		   }
 
       case IF2   : { code *p1, *p2;
-                     c(x->o1);
-                     gi(IFEQ); p1 = here++;
-                     c(x->o2);
-                     gi(GOTO); p2 = here++; fix(p1,here);
-                     c(x->o3); fix(p2,here); break;
-                   }
+		     c(x->o1);
+		     gi(IFEQ); p1 = here++;
+		     c(x->o2);
+		     gi(GOTO); p2 = here++; fix(p1,here);
+		     c(x->o3); fix(p2,here); break;
+		   }
 
       case WHILE : { code *p1 = here, *p2;
-                     c(x->o1);
-                     gi(IFEQ); p2 = here++;
-                     c(x->o2);
-                     gi(GOTO); fix(here++,p1); fix(p2,here); break;
-                   }
+		     c(x->o1);
+		     gi(IFEQ); p2 = here++;
+		     c(x->o2);
+		     gi(GOTO); fix(here++,p1); fix(p2,here); break;
+		   }
 
       case DO    : { code *p1 = here; c(x->o1);
-                     c(x->o2);
-                     gi(IFNE); fix(here++,p1); break;
-                   }
+		     c(x->o2);
+		     gi(IFNE); fix(here++,p1); break;
+		   }
 
       case EMPTY : break;
 
       case SEQ   : c(x->o1);
-                   c(x->o2); break;
+		   c(x->o2); break;
 
       case EXPR  : c(x->o1);
-                   gi(POP); break;
+		   gi(POP); break;
 
       case PROG  : c(x->o1);
-                   gi(RETURN); break;
+		   gi(RETURN); break;
     }
 }
 
@@ -519,49 +518,49 @@ int main()
 //{
 //  BIG_NUM bn1 = sp[-2];//En attribu? direct?
 //  BIG_NUM bn2 = sp[-1];
-//  
+//
 //  BIG_NUM resultat;
-// 
+//
 //  int chiffre1;
 //  int chiffre2;
 //  int ch_re;
 //  CELL *cell1 = bn1.chiffres;
 //  CELL *cell2 = bn2.chiffres;
-// 
+//
 //  //Si un des num est 0
 //  if(cell1 == NULL){
 //    return bn2;
 //  }else if(cell2 == NULL){
 //    return bn1;
 //  }
-//  
+//
 //  int reste = 0;
-//  
+//
 //  while(cell1 != NULL){
 //    if(cell2 != NULL){
 //      chiffre1 = char_to_int(cell1->chiffre);
 //      chiffre2 = char_to_int(cell2->chiffre);
-// 
+//
 //      add_big_num(resultat, chiffre1,chiffre2, reste);
-//      
+//
 //      bn_new_num(resultat,ch_re);
 //      cell1 = cell1->suivant;
 //      cell2 = cell2->suivant;
 //    }else{
 //      chiffre1 = char_to_int(cell1->chiffre);
 //      chiffre2 = 0;
-//      
+//
 //      add_big_num(resultat, chiffre1,chiffre2, reste);
-//      
+//
 //      cell1 = cell1->suivant;
 //    }
 //  }
 //  while(cell2 != NULL){//Si le 2e chiffre est plus grand que le premier
 //    chiffre1 = char_to_int(cell2->chiffre);
 //    chiffre2 = 0;
-//       
+//
 //    add_big_num(resultat, chiffre1,chiffre2, reste);
-//    
+//
 //    cell2 = cell2->suivant;
 //  }
 //  if(reste == 1){//Si il restait une retenue
@@ -601,4 +600,4 @@ BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
     }
   return result;
 }
-  
+
