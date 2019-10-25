@@ -22,11 +22,11 @@ typedef struct cellule {
 // function to transform char to int
 int char_to_int(char c)
 {
-  return c - '0';
+  return c + '0';
 }
 // returns a pointer to last non-NULL cell of a big num
-CELL* last_cell(BIG_NUM bn){
-  CELL *cell = bn.chiffres;
+CELL *bn_last_cell(BIG_NUM *bn){
+  CELL *cell = bn->chiffres;
   if(cell != NULL){
     while(cell->suivant != NULL){
       cell = cell->suivant;
@@ -37,12 +37,12 @@ CELL* last_cell(BIG_NUM bn){
   }
 }
 // pop the last non-NULL cell of a big num1
-BIG_NUM pop_bn(BIG_NUM bn){
-  CELL *cell = bn.chiffres;
+BIG_NUM *bn_pop(BIG_NUM *bn){
+  CELL *cell = bn->chiffres;
   if(cell == NULL){
     return bn;
   } else if(cell->suivant==NULL){
-    bn.chiffres = NULL;
+    bn->chiffres = NULL;
     return bn;
   } else {
     while(cell->suivant->suivant != NULL){
@@ -56,24 +56,30 @@ BIG_NUM pop_bn(BIG_NUM bn){
 // on veut une fonction qui initialise un nouveau bignum dans la memoire.
 // il l'initialise avec aucun caractere a l'interieur.
 // TODO pas certain si on devrais utiliser le * ici ou pas dans la declar et return
-BIG_NUM new_big_num()
+BIG_NUM *new_big_num()
 {
-  BIG_NUM bn = {0,NULL}; 
+  BIG_NUM *bn = malloc(sizeof(BIG_NUM)); 
   return bn;
 }
 // cette methode rajoute un caractere a un bignum existant (MAYBE LOL)
 // TODO not sure if it works
-BIG_NUM new_num(BIG_NUM bn, char k)
+BIG_NUM *bn_new_num(BIG_NUM *bn, char k)
 {
   CELL *cell = malloc(sizeof(CELL));
   cell->chiffre = k;
-  cell->suivant = bn.chiffres;
-  bn.chiffres = cell;
+  cell->suivant = bn->chiffres;
+  bn->chiffres = cell;
   return bn;
 }
 // verify if big_num has zeros at the start and if so 
-BIG_NUM verify_zero(BIG_NUM bn)
+BIG_NUM *bn_verif_correc_zero(BIG_NUM *bn)
 {
+  while (bn_last_cell(bn)->chiffre=='0')
+    {
+      bn_pop(bn);
+    }
+  return bn;
+}
   
 
 /* Analyseur lexical. */
@@ -86,7 +92,7 @@ char *words[] = { "do", "else", "if", "while", NULL };
 int ch = ' ';
 int sym;
 //int int_val;
-BIG_NUM big_num;
+BIG_NUM *big_num;
 char id_name[100]; // 27?
 
 void syntax_error() { fprintf(stderr, "syntax error\n"); exit(1); }
@@ -124,17 +130,18 @@ void next_sym()
 		count++;
 		//tant qu'il y a des chiffres on les rajoute au bignum
 		// TODO faut voir comment le traiter maintenant quon a plus int_val
-		new_num(big_num, ch);
+		bn_new_num(big_num, ch);
                 next_ch();
               }
 	    // verify special case 0
-	    if (count == 1 && big_num.chiffres->chiffre == 0)
+	    if (count == 1 && big_num->chiffres->chiffre == 0)
 	      { // reset big num to NULL value which is 0
 		big_num = new_big_num();
 	      }
 	    else
 	      {
-		
+		// TODO pas certain que l'assignation est necessaire
+		big_num = bn_verif_correc_zero(big_num);
 	      }
 		sym = INT;
 
@@ -204,7 +211,7 @@ node *term() /* <term> ::= <id> | <int> | <paren_expr> */
   else if (sym == INT)     /* <term> ::= <int> */
     {
       x = new_node(CST);
-      x->val = &big_num; // TODO BIG_NUM
+      x->val = big_num; // TODO BIG_NUM
       next_sym();
     }
   else                     /* <term> ::= <paren_expr> */
@@ -445,19 +452,19 @@ void run()
   for (;;)
     switch (*pc++)
       {
-        case ILOAD : *sp++ = globals[*pc++];             break;
-        case ISTORE: globals[*pc++] = *--sp;             break;
-        case BIPUSH: *sp++ = *pc++;                      break;
-        case DUP   : sp++; sp[-1] = sp[-2];              break;
-        case POP   : --sp;                               break;
-          //case IADD  : sp[-2] = sp[-2] + sp[-1]; --sp;     break;TODO changer IADD
-          //case ISUB  : sp[-2] = sp[-2] - sp[-1]; --sp;     break;TODO changer ISUB
-        case GOTO  : pc += *pc;                          break;
-        case IFEQ  : if (*--sp==0) pc += *pc; else pc++; break;
-        case IFNE  : if (*--sp!=0) pc += *pc; else pc++; break;
-        case IFLT  : if (*--sp< 0) pc += *pc; else pc++; break;
-        case RETURN: return;
-    }
+      case ILOAD : *sp++ = globals[*pc++];             break;
+      case ISTORE: globals[*pc++] = *--sp;             break;
+      case BIPUSH: *sp++ = *pc++;                      break;
+      case DUP   : sp++; sp[-1] = sp[-2];              break;
+      case POP   : --sp;                               break;
+      case IADD  : sp[-2] = sp[-2] + sp[-1]; --sp;     break;//TODO changer IADD
+      case ISUB  : sp[-2] = sp[-2] - sp[-1]; --sp;     break;//TODO changer ISUB
+      case GOTO  : pc += *pc;                          break;
+      case IFEQ  : if (*--sp==0) pc += *pc; else pc++; break;
+      case IFNE  : if (*--sp!=0) pc += *pc; else pc++; break;
+      case IFLT  : if (*--sp< 0) pc += *pc; else pc++; break;
+      case RETURN: return;
+      }
 }
 
 /*---------------------------------------------------------------------------*/
@@ -494,68 +501,90 @@ int main()
 //sp[-2] = 12 (pointeur vers un GE)
 //sp[-1] = 23 ((pointeur vers un GE)
 //TODO il y a une meilleur de le faire avec quelque chose de recursif
-BIG_NUM addition()
+//BIG_NUM addition()
+//{
+//  BIG_NUM bn1 = sp[-2];//En attribu? direct?
+//  BIG_NUM bn2 = sp[-1];
+//  
+//  BIG_NUM resultat;
+// 
+//  int chiffre1;
+//  int chiffre2;
+//  int ch_re;
+//  CELL *cell1 = bn1.chiffres;
+//  CELL *cell2 = bn2.chiffres;
+// 
+//  //Si un des num est 0
+//  if(cell1 == NULL){
+//    return bn2;
+//  }else if(cell2 == NULL){
+//    return bn1;
+//  }
+//  
+//  int reste = 0;
+//  
+//  while(cell1 != NULL){
+//    if(cell2 != NULL){
+//      chiffre1 = char_to_int(cell1->chiffre);
+//      chiffre2 = char_to_int(cell2->chiffre);
+// 
+//      add_big_num(resultat, chiffre1,chiffre2, reste);
+//      
+//      bn_new_num(resultat,ch_re);
+//      cell1 = cell1->suivant;
+//      cell2 = cell2->suivant;
+//    }else{
+//      chiffre1 = char_to_int(cell1->chiffre);
+//      chiffre2 = 0;
+//      
+//      add_big_num(resultat, chiffre1,chiffre2, reste);
+//      
+//      cell1 = cell1->suivant;
+//    }
+//  }
+//  while(cell2 != NULL){//Si le 2e chiffre est plus grand que le premier
+//    chiffre1 = char_to_int(cell2->chiffre);
+//    chiffre2 = 0;
+//       
+//    add_big_num(resultat, chiffre1,chiffre2, reste);
+//    
+//    cell2 = cell2->suivant;
+//  }
+//  if(reste == 1){//Si il restait une retenue
+//     bn_new_num(resultat,ch_re);
+//  }
+//  return resultat;
+//}//
+//void add_big_num(BIG_NUM resultat, int chiffre1, int chiffre2, int reste){
+//  int ch_re = chiffre1 + chiffre2 + reste;
+//  if(ch_re >= 10){
+//    reste = 1;
+//    ch_re = ch_re % 10;//recupere le chiffre le moin significatif
+//  }else{
+//    reste = 0;
+//  }
+//  bn_new_num(resultat,ch_re);
+//}//
+
+BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
 {
-  BIG_NUM bn1 = sp[-2];//En attribu? direct?
-  BIG_NUM bn2 = sp[-1];
-  
-  BIG_NUM resultat;
-
-  int chiffre1;
-  int chiffre2;
-  int ch_re;
-  CELL *cell1 = bn1.chiffres;
-  CELL *cell2 = bn2.chiffres;
-
-  //Si un des num est 0
-  if(cell1 == NULL){
-    return bn2;
-  }else if(cell2 == NULL){
-    return bn1;
-  }
-  
-  int reste = 0;
-  
-  while(cell1 != NULL){
-    if(cell2 != NULL){
-      chiffre1 = char_to_int(cell1->chiffre);
-      chiffre2 = char_to_int(cell2->chiffre);
-
-      add_big_num(resultat, chiffre1,chiffre2, reste);
-      
-      new_num(resultat,ch_re);
-      cell1 = cell1->suivant;
-      cell2 = cell2->suivant;
-    }else{
-      chiffre1 = char_to_int(cell1->chiffre);
-      chiffre2 = 0;
-      
-      add_big_num(resultat, chiffre1,chiffre2, reste);
-      
-      cell1 = cell1->suivant;
+  int restant = 0; // store le restant pour prochain calcul
+  int temp_res = 0; // store the temporary add result
+  CELL *ca = a->chiffres; // chiffre 1
+  CELL *cb = b->chiffres; // chiffre 2
+  BIG_NUM *result = new_big_num();
+  while(ca!=NULL || cb!=NULL)
+    {
+      temp_res = ((ca==NULL)?0:ca->chiffre)
+	+ ((cb==NULL)?0:ca->chiffre) + restant;
+      // verify if result is bigger than 10
+      if (temp_res>10){
+	restant = temp_res/10;
+      } else {
+	restant = 0;
+      }
+      bn_new_num(result, char_to_int(temp_res));
     }
-  }
-  while(cell2 != NULL){//Si le 2e chiffre est plus grand que le premier
-    chiffre1 = char_to_int(cell2->chiffre);
-    chiffre2 = 0;
-       
-    add_big_num(resultat, chiffre1,chiffre2, reste);
-    
-    cell2 = cell2->suivant;
-  }
-  if(reste == 1){//Si il restait une retenue
-     new_num(resultat,ch_re);
-  }
-  return resultat;
+  return result;
 }
-
-void add_big_num(BIG_NUM resultat, int chiffre1, int chiffre2, int reste){
-  int ch_re = chiffre1 + chiffre2 + reste;
-  if(ch_re >= 10){
-    reste = 1;
-    ch_re = ch_re % 10;//recupere le chiffre le moin significatif
-  }else{
-    reste = 0;
-  }
-  new_num(resultat,ch_re);
-}
+  
