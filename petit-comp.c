@@ -212,7 +212,7 @@ int bn_bigger(BIG_NUM *a, BIG_NUM *b){
       if(val_a > val_b) return 1;
       else if(val_b > val_a) return 0;
     }
-    return 1;
+    return 2;
   }
 }
 
@@ -227,14 +227,18 @@ BIG_NUM * bn_ISUBB(BIG_NUM *a, BIG_NUM *b)
   CELL *ca = a->chiffres; // chiffre 1
   CELL *cb = b->chiffres; // chiffre 2
   BIG_NUM *result = new_big_num();
-
-  /*if(cb>ca){
-     BIG_NUM temp = ca;
-     ca = cb;
-     cb = temp;
-     reverse = 1;
+  int status = bn_bigger(ca,cb);//Pour pas qu'il le calcule 2 foix
+    if(status == 2){//Si pareil, = 0
+      resultat = new_big_num();
+      return resultat;
+    }else if(status == 0){
+    
+      BIG_NUM temp = ca;
+      ca = cb;
+      cb = temp;
+      reverse = 1;
     }
-  */
+ 
   while(ca!=NULL || cb!=NULL){
     if(cb==NULL){
       bn_new_num_reverse(result,ca->chiffre);
