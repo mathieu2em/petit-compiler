@@ -1,10 +1,12 @@
 /* fichier: "petit-comp.c" */
 
 /* Un petit compilateur et machine virtuelle pour un sous-ensemble de C.  */
+// TODO dealer avec les NULL des malloc pour eviter le festival de st-tite du SEGFAULT
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "petit-comp.h"
 
 /*---------------------------------------------------------------------------*/
 /* Grands entiers Structure */
@@ -113,9 +115,12 @@ BIG_NUM *bn_new_num_reverse(BIG_NUM *bn, char k){
 
 void bn_print(BIG_NUM *bn)
 {
+  //printf("t1\n");
   CELL *c = bn->chiffres;
+  //printf("t2\n");
   while(c!=NULL)
     {
+      //printf("t3\n");
       printf("%c", c->chiffre);
       c = c->suivant;
     }
@@ -124,16 +129,17 @@ void bn_print(BIG_NUM *bn)
 
 BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
 {
-  //printf("test\n");
+  printf("bn_IADD\n");
   int restant = 0; // store le restant pour prochain calcul
   int temp_res = 0; // store the temporary add result
   CELL *ca = a->chiffres; // chiffre 1
   CELL *cb = b->chiffres; // chiffre 2
   BIG_NUM *result = new_big_num();
-  //printf("cc1\n");
+  printf("cc1\n");
+  bn_print(a);
   while(ca!=NULL || cb!=NULL)
     {
-      //printf("cc2");
+      printf("cc2");
       temp_res = ((ca==NULL)?0:char_to_int(ca->chiffre)) 
       + ((cb==NULL)?0:char_to_int(ca->chiffre)) + restant;
       // verify if result is bigger than 10
@@ -145,9 +151,10 @@ BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
       if (ca!=NULL) ca = ca->suivant;
       if (cb!=NULL) cb = cb->suivant;
 
-      //printf("%c\n",int_to_char(temp_res));
+      printf("%c\n",int_to_char(temp_res));
       bn_new_num_reverse(result, int_to_char(temp_res));
     }
+  bn_print(result);
   return result;
 }
 
@@ -210,15 +217,15 @@ void next_sym()
 	    else
 	      {
 		// TODO pas certain que l'assignation est necessaire
-		big_num = bn_verif_correc_zero(big_num);
+		bn_verif_correc_zero(big_num);
 	      }
 		sym = INT;
 
           }
-        else if (ch >= 'a' && ch <= 'z')
+        else if (ch >= 'a' && ch <= 'z')//TODO jai limpression que ca va pas chercher la var comme il faut jai limpression que ca va chercher un mot complet. faut arranger ca
           {
             int i = 0; /* overflow? */
-
+	    
             while ((ch >= 'a' && ch <= 'z') || ch == '_')
               {
                 id_name[i++] = ch;
@@ -254,6 +261,7 @@ struct node
     struct node *o2;
     struct node *o3;
     int val;
+    BIG_NUM *bn; // test
   };
 
 typedef struct node node;
@@ -280,7 +288,8 @@ node *term() /* <term> ::= <id> | <int> | <paren_expr> */
   else if (sym == INT)     /* <term> ::= <int> */
     {
       x = new_node(CST);
-      x->val = big_num; // TODO BIG_NUM
+      x->bn = big_num; // TODO BIG_NUM
+      bn_print(x->bn);
       next_sym();
     }
   else                     /* <term> ::= <paren_expr> */
@@ -450,7 +459,7 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
 { switch (x->kind)
     { case VAR   : gi(ILOAD); g(x->val); break;
 
-      case CST   : gi(BIPUSH); g(x->val); break;
+    case CST   : gi(BIPUSH); g(x->bn); break; // TODO au lieu de changer val pour bn faire un union et une var qui dit quel aller chercher selon sam hyvon
 
       case ADD   : c(x->o1); c(x->o2); gi(IADD); break;
 
@@ -526,7 +535,7 @@ void run()
       case BIPUSH: *sp++ = *pc++;                      break;
       case DUP   : sp++; sp[-1] = sp[-2];              break;
       case POP   : --sp;                               break;
-      case IADD  : sp[-2] = sp[-2] + sp[-1]; --sp;     break;//TODO changer IADD
+      case IADD  : sp[-2] = bn_IADD((BIG_NUM *)&sp[-2],(BIG_NUM *)&sp[-1]); --sp;  break;//TODO changer IADD
       case ISUB  : sp[-2] = sp[-2] - sp[-1]; --sp;     break;//TODO changer ISUB
       case GOTO  : pc += *pc;                          break;
       case IFEQ  : if (*--sp==0) pc += *pc; else pc++; break;
@@ -557,8 +566,10 @@ int main()
 
   for (i=0; i<26; i++)//TODO doit enlever eventuellement
     if (globals[i] != 0)
-      printf("%c = %d\n", 'a'+i, globals[i]);
-
+      {
+	//printf("%c = %d\n", 'a'+i, globals[i]);
+	bn_print((BIG_NUM *)&globals[i]);
+      }
   return 0;
 }
 
