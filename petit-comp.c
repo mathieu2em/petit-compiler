@@ -159,6 +159,51 @@ BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
   return result;
 }
 
+BIG_NUM * bn_ISUBB(BIG_NUM *a, BIG_NUM *b)
+{
+  printf("bn_SUBBx\n");
+  int restant = 0; // store le restant pour prochain calcul
+  int temp_result = 0; // store the temporary add result
+  int retenue = 0;
+  int reverse = 0;
+  
+  CELL *ca = a->chiffres; // chiffre 1
+  CELL *cb = b->chiffres; // chiffre 2
+  BIG_NUM *result = new_big_num();
+
+  /*if(cb>ca){
+     BIG_NUM temp = ca;
+     ca = cb;
+     cb = temp;
+     reverse = 1;
+    }
+  */
+  while(ca!=NULL || cb!=NULL){
+    if(cb==NULL){
+      bn_new_num_reverse(result,ca->chiffre);
+    }else{
+      int a = char_to_int(ca->chiffre);
+      int b = char_to_int(cb->chiffre);
+      if(retenue == 1){
+        if(a == 0) a = 9;
+        a -= 1;
+        retenue = 0;
+      }                
+      if(a < b){
+        a += 10;
+        retenue = 1;
+      }
+      temp_result = a - b;
+      bn_new_num_reverse(result,int_to_char(temp_result));
+      if(ca!=NULL) ca = ca->suivant;
+      if(ca!=NULL) cb = cb->suivant;
+    }
+  }
+  if(reverse == 1) result->negatif = 1;
+  return result; 
+}
+
+
 /* Analyseur lexical. */
 
 enum { DO_SYM, ELSE_SYM, IF_SYM, WHILE_SYM, LBRA, RBRA, LPAR,
