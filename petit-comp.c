@@ -131,28 +131,29 @@ BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
 {
   printf("bn_IADD\n");
   int restant = 0; // store le restant pour prochain calcul
-  int temp_res = 0; // store the temporary add result
+  int temp_result = 0; // store the temporary add result
   CELL *ca = a->chiffres; // chiffre 1
   CELL *cb = b->chiffres; // chiffre 2
   BIG_NUM *result = new_big_num();
   printf("cc1\n");
+  printf("%d %d",a,b);
   bn_print(a);
   while(ca!=NULL || cb!=NULL)
     {
-      printf("cc2");
-      temp_res = ((ca==NULL)?0:char_to_int(ca->chiffre)) 
-      + ((cb==NULL)?0:char_to_int(ca->chiffre)) + restant;
+      printf("cc2 %d %d %d\n", ((ca==NULL)?0:char_to_int(ca->chiffre)), ((cb==NULL)?0:char_to_int(cb->chiffre)), restant);
+      temp_result = ((ca==NULL)?0:char_to_int(ca->chiffre)) 
+      + ((cb==NULL)?0:char_to_int(cb->chiffre)) + restant;
       // verify if result is bigger than 10
-      if (temp_res>=10){
-	      restant = temp_res/10;
+      if (temp_result>=10){
+	      restant = temp_result/10;
       } else {
 	      restant = 0;
       }
       if (ca!=NULL) ca = ca->suivant;
       if (cb!=NULL) cb = cb->suivant;
 
-      printf("%c\n",int_to_char(temp_res));
-      bn_new_num_reverse(result, int_to_char(temp_res));
+      printf("%c\n",int_to_char(temp_result));
+      bn_new_num_reverse(result, int_to_char(temp_result));
     }
   bn_print(result);
   return result;
@@ -439,7 +440,7 @@ node *program()  /* <program> ::= <stat> */
 enum { ILOAD, ISTORE, BIPUSH, DUP, POP, IADD, ISUB,
        GOTO, IFEQ, IFNE, IFLT, RETURN };
 
-typedef signed char code;
+typedef long long int code;
 
 code object[1000], *here = object;
 
@@ -524,7 +525,7 @@ int globals[26];
 
 void run()
 {
-  int stack[1000], *sp = stack; /* overflow? */ //pile
+  long long int stack[1000], *sp = stack; /* overflow? */ //pile
   code *pc = object;
 
   for (;;)
@@ -535,7 +536,9 @@ void run()
       case BIPUSH: *sp++ = *pc++;                      break;
       case DUP   : sp++; sp[-1] = sp[-2];              break;
       case POP   : --sp;                               break;
-      case IADD  : sp[-2] = bn_IADD((BIG_NUM *)&sp[-2],(BIG_NUM *)&sp[-1]); --sp;  break;//TODO changer IADD
+      case IADD  : printf("sp[-2] = %d and &sp[-2] = %d\n", sp[-2], &sp[-2]);
+	sp[-2] = bn_IADD((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
+	--sp;  break;//TODO changer IADD
       case ISUB  : sp[-2] = sp[-2] - sp[-1]; --sp;     break;//TODO changer ISUB
       case GOTO  : pc += *pc;                          break;
       case IFEQ  : if (*--sp==0) pc += *pc; else pc++; break;
