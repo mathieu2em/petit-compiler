@@ -12,6 +12,7 @@
 /* Grands entiers Structure */
 
 typedef struct grand_entier {
+  int size; // number of elements in the bn
   int negatif;
   struct cellule *chiffres;
 } BIG_NUM;
@@ -158,6 +159,38 @@ BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
   bn_print(result);
   return result;
 }
+// method returns a pointer to cell at position i
+CELL *bn_get_cell(BIG_NUM *bn, int i){
+  if(bn->size <= i){
+    printf("ERROR bn_get_cell");
+    return 0;
+  } else {
+    int count = 0;
+    CELL *c = bn->chiffres;
+    while(count++<i){
+      c = c->suivant;
+    }
+    return c;
+  } 
+}
+// returns true if a is bigger than b else false
+// doesnt check sign nor if bn is illegal
+int bn_bigger(BIG_NUM *a, BIG_NUM *b){
+  if(a->size > b->size) return 1;
+  else if(a->size < b->size) return 0;
+  else {
+    int i = a->size;
+    int val_a = 0;
+    int val_b = 0;
+    while(i-- > 0){
+      val_a = char_to_int(bn_get_cell(a, i)->chiffre);
+      val_b = char_to_int(bn_get_cell(b, i)->chiffre);
+      if(val_a > val_b) return 1;
+      else if(val_b > val_a) return 0;
+    }
+    return 1;
+  }
+}
 
 /* Analyseur lexical. */
 
@@ -220,7 +253,8 @@ void next_sym()
 		// TODO pas certain que l'assignation est necessaire
 		bn_verif_correc_zero(big_num);
 	      }
-		sym = INT;
+	    big_num->size = count;
+	    sym = INT;
 
           }
         else if (ch >= 'a' && ch <= 'z')//TODO jai limpression que ca va pas chercher la var comme il faut jai limpression que ca va chercher un mot complet. faut arranger ca
@@ -257,12 +291,15 @@ enum { VAR, CST, ADD, SUB, LT, ASSIGN,
 
 struct node
   {
+    union
+    {
+      int val;
+      BIG_NUM *bn;
+    };
     int kind;
     struct node *o1;
     struct node *o2;
     struct node *o3;
-    int val;
-    BIG_NUM *bn; // test
   };
 
 typedef struct node node;
@@ -440,7 +477,7 @@ node *program()  /* <program> ::= <stat> */
 enum { ILOAD, ISTORE, BIPUSH, DUP, POP, IADD, ISUB,
        GOTO, IFEQ, IFNE, IFLT, RETURN };
 
-typedef long long int code;
+typedef long int code;
 
 code object[1000], *here = object;
 
@@ -521,11 +558,11 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
 
 /* Machine virtuelle. */
 
-int globals[26];
+long int globals[26];
 
 void run()
 {
-  long long int stack[1000], *sp = stack; /* overflow? */ //pile
+  long int stack[1000], *sp = stack; /* overflow? */ //pile
   code *pc = object;
 
   for (;;)
@@ -570,7 +607,7 @@ int main()
   for (i=0; i<26; i++)//TODO doit enlever eventuellement
     if (globals[i] != 0)
       {
-	//printf("%c = %d\n", 'a'+i, globals[i]);
+	printf("%c = %d\n", 'a'+i, globals[i]);
 	bn_print((BIG_NUM *)&globals[i]);
       }
   return 0;
