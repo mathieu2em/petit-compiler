@@ -12,6 +12,7 @@
 /* Grands entiers Structure */
 
 typedef struct grand_entier {
+  int size; // number of elements in the bn
   int negatif;
   struct cellule *chiffres;
 } BIG_NUM;
@@ -129,18 +130,18 @@ void bn_print(BIG_NUM *bn)
 
 BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
 {
-  printf("bn_IADD\n");
+  //printf("bn_IADD\n");
   int restant = 0; // store le restant pour prochain calcul
   int temp_result = 0; // store the temporary add result
   CELL *ca = a->chiffres; // chiffre 1
   CELL *cb = b->chiffres; // chiffre 2
   BIG_NUM *result = new_big_num();
-  printf("cc1\n");
-  printf("%d %d",a,b);
+  //printf("cc1\n");
+  //printf("%d %d",a,b);
   bn_print(a);
   while(ca!=NULL || cb!=NULL)
     {
-      printf("cc2 %d %d %d\n", ((ca==NULL)?0:char_to_int(ca->chiffre)), ((cb==NULL)?0:char_to_int(cb->chiffre)), restant);
+      //printf("cc2 %d %d %d\n", ((ca==NULL)?0:char_to_int(ca->chiffre)), ((cb==NULL)?0:char_to_int(cb->chiffre)), restant);
       temp_result = ((ca==NULL)?0:char_to_int(ca->chiffre)) 
       + ((cb==NULL)?0:char_to_int(cb->chiffre)) + restant;
       // verify if result is bigger than 10
@@ -152,11 +153,67 @@ BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
       if (ca!=NULL) ca = ca->suivant;
       if (cb!=NULL) cb = cb->suivant;
 
-      printf("%c\n",int_to_char(temp_result));
+      //printf("%c\n",int_to_char(temp_result));
       bn_new_num_reverse(result, int_to_char(temp_result));
     }
   bn_print(result);
   return result;
+}
+// divise le resultat du bignum par 10
+BIG_NUM *bn_DIV(BIG_NUM *bn){
+  BIG_NUM *result = new_big_num();
+  if(bn->size==1){
+    return result;
+  } else {
+    CELL *c = bn->chiffres->suivant;
+    while(c != NULL){
+      bn_new_num_reverse(result, c->chiffre);
+      c = c->suivant;
+    } 
+  }
+  return result;
+}
+// bignum modulo 10
+BIG_NUM *bn_MOD(BIG_NUM *bn){
+  if(bn->size==1){
+    if(bn->chiffres==NULL){
+      return new_big_num();
+    } else {
+      BIG_NUM *result = new_big_num();
+      bn_new_num(result, bn->chiffres->chiffre);
+      return result;
+}
+// method returns a pointer to cell at position i
+CELL *bn_get_cell(BIG_NUM *bn, int i){
+  if(bn->size <= i){
+    printf("ERROR bn_get_cell");
+    return 0;
+  } else {
+    int count = 0;
+    CELL *c = bn->chiffres;
+    while(count++<i){
+      c = c->suivant;
+    }
+    return c;
+  } 
+}
+// returns true if a is bigger than b else false
+// doesnt check sign nor if bn is illegal
+int bn_bigger(BIG_NUM *a, BIG_NUM *b){
+  if(a->size > b->size) return 1;
+  else if(a->size < b->size) return 0;
+  else {
+    int i = a->size;
+    int val_a = 0;
+    int val_b = 0;
+    while(i-- > 0){
+      val_a = char_to_int(bn_get_cell(a, i)->chiffre);
+      val_b = char_to_int(bn_get_cell(b, i)->chiffre);
+      if(val_a > val_b) return 1;
+      else if(val_b > val_a) return 0;
+    }
+    return 1;
+  }
 }
 
 BIG_NUM * bn_ISUBB(BIG_NUM *a, BIG_NUM *b)
@@ -265,7 +322,8 @@ void next_sym()
 		// TODO pas certain que l'assignation est necessaire
 		bn_verif_correc_zero(big_num);
 	      }
-		sym = INT;
+	    big_num->size = count;
+	    sym = INT;
 
           }
         else if (ch >= 'a' && ch <= 'z')//TODO jai limpression que ca va pas chercher la var comme il faut jai limpression que ca va chercher un mot complet. faut arranger ca
@@ -302,12 +360,15 @@ enum { VAR, CST, ADD, SUB, LT, ASSIGN,
 
 struct node
   {
+    union
+    {
+      int val;
+      BIG_NUM *bn;
+    };
     int kind;
     struct node *o1;
     struct node *o2;
     struct node *o3;
-    int val;
-    BIG_NUM *bn; // test
   };
 
 typedef struct node node;
@@ -485,7 +546,7 @@ node *program()  /* <program> ::= <stat> */
 enum { ILOAD, ISTORE, BIPUSH, DUP, POP, IADD, ISUB,
        GOTO, IFEQ, IFNE, IFLT, RETURN };
 
-typedef long long int code;
+typedef long int code;
 
 code object[1000], *here = object;
 
@@ -566,11 +627,11 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
 
 /* Machine virtuelle. */
 
-int globals[26];
+long int globals[26];
 
 void run()
 {
-  long long int stack[1000], *sp = stack; /* overflow? */ //pile
+  long int stack[1000], *sp = stack; /* overflow? */ //pile
   code *pc = object;
 
   for (;;)
@@ -615,7 +676,7 @@ int main()
   for (i=0; i<26; i++)//TODO doit enlever eventuellement
     if (globals[i] != 0)
       {
-	//printf("%c = %d\n", 'a'+i, globals[i]);
+	printf("%c = %d\n", 'a'+i, globals[i]);
 	bn_print((BIG_NUM *)&globals[i]);
       }
   return 0;
