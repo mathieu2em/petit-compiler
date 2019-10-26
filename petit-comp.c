@@ -130,18 +130,18 @@ void bn_print(BIG_NUM *bn)
 
 BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
 {
-  printf("bn_IADD\n");
+  //printf("bn_IADD\n");
   int restant = 0; // store le restant pour prochain calcul
   int temp_result = 0; // store the temporary add result
   CELL *ca = a->chiffres; // chiffre 1
   CELL *cb = b->chiffres; // chiffre 2
   BIG_NUM *result = new_big_num();
-  printf("cc1\n");
-  printf("%d %d",a,b);
+  //printf("cc1\n");
+  //printf("%d %d",a,b);
   bn_print(a);
   while(ca!=NULL || cb!=NULL)
     {
-      printf("cc2 %d %d %d\n", ((ca==NULL)?0:char_to_int(ca->chiffre)), ((cb==NULL)?0:char_to_int(cb->chiffre)), restant);
+      //printf("cc2 %d %d %d\n", ((ca==NULL)?0:char_to_int(ca->chiffre)), ((cb==NULL)?0:char_to_int(cb->chiffre)), restant);
       temp_result = ((ca==NULL)?0:char_to_int(ca->chiffre)) 
       + ((cb==NULL)?0:char_to_int(cb->chiffre)) + restant;
       // verify if result is bigger than 10
@@ -153,11 +153,35 @@ BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
       if (ca!=NULL) ca = ca->suivant;
       if (cb!=NULL) cb = cb->suivant;
 
-      printf("%c\n",int_to_char(temp_result));
+      //printf("%c\n",int_to_char(temp_result));
       bn_new_num_reverse(result, int_to_char(temp_result));
     }
   bn_print(result);
   return result;
+}
+// divise le resultat du bignum par 10
+BIG_NUM *bn_DIV(BIG_NUM *bn){
+  BIG_NUM *result = new_big_num();
+  if(bn->size==1){
+    return result;
+  } else {
+    CELL *c = bn->chiffres->suivant;
+    while(c != NULL){
+      bn_new_num_reverse(result, c->chiffre);
+      c = c->suivant;
+    } 
+  }
+  return result;
+}
+// bignum modulo 10
+BIG_NUM *bn_MOD(BIG_NUM *bn){
+  if(bn->size==1){
+    if(bn->chiffres==NULL){
+      return new_big_num();
+    } else {
+      BIG_NUM *result = new_big_num();
+      bn_new_num(result, bn->chiffres->chiffre);
+      return result;
 }
 // method returns a pointer to cell at position i
 CELL *bn_get_cell(BIG_NUM *bn, int i){
