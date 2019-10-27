@@ -56,6 +56,19 @@ CELL *bn_last_cell(BIG_NUM *bn){
         return cell;
     }
 }
+// method returns a pointer to cell at position i
+CELL *bn_get_cell(BIG_NUM *bn, int i){
+    if(bn->size <= i){
+        printf("ERROR bn_get_cell");
+        return 0;
+    }
+    int count = 0;
+    CELL *c = bn->chiffres;
+    while((count++)<i){
+        c = c->suivant;
+    }
+    return c;
+}
 // pop the last non-NULL cell of a big num1
 BIG_NUM *bn_pop(BIG_NUM *bn){
     if(bn->size==0){
@@ -137,6 +150,25 @@ void bn_print(BIG_NUM *bn)
     printf("\n");
 }
 
+void bn_print_right(BIG_NUM *bn)
+{
+    if(bn->negatif==1) printf("-");
+    if(bn->size==0) printf("0");
+    else {
+        //printf("t1\n");
+        int i = bn->size;
+        CELL *c = bn_get_cell(bn, --i);
+        //printf("t2\n");
+        while(i>=0)
+            {
+                //printf("t3\n");
+                printf("%c", c->chiffre);
+                c = bn_get_cell(bn, --i);
+            }
+    }
+    printf("\n");
+}
+
 BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
 {
     //printf("bn_IADD\n");
@@ -153,9 +185,11 @@ BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
             //printf("cc2 %d %d %d\n", ((ca==NULL)?0:char_to_int(ca->chiffre)), ((cb==NULL)?0:char_to_int(cb->chiffre)), restant);
             temp_result = ((ca==NULL)?0:char_to_int(ca->chiffre))
                 + ((cb==NULL)?0:char_to_int(cb->chiffre)) + restant;
+            //printf("%d\n", temp_result);
             // verify if result is bigger than 10
             if (temp_result>=10){
                 restant = temp_result/10;
+                temp_result = temp_result%10;
             } else {
                 restant = 0;
             }
@@ -165,6 +199,7 @@ BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
             //printf("%c\n",int_to_char(temp_result));
             bn_new_num_reverse(result, int_to_char(temp_result));
         }
+    if(restant!=0) bn_new_num_reverse(result, int_to_char(restant));
     //bn_print(result);
     return result;
 }
@@ -193,20 +228,6 @@ BIG_NUM *bn_MOD(BIG_NUM *bn){
     }
     BIG_NUM *result = new_big_num();
     return bn_new_num(result, bn->chiffres->chiffre);
-}
-// method returns a pointer to cell at position i
-CELL *bn_get_cell(BIG_NUM *bn, int i){
-    if(bn->size <= i){
-        printf("ERROR bn_get_cell");
-        return 0;
-    } else {
-        int count = 0;
-        CELL *c = bn->chiffres;
-        while(count++<i){
-            c = c->suivant;
-        }
-        return c;
-    }
 }
 // returns true if a is bigger than b else false
 // doesnt check sign nor if bn is illegal
@@ -658,10 +679,10 @@ void run()
             case BIPUSH: *sp++ = *pc++;                      break;
             case DUP   : sp++; sp[-1] = sp[-2];              break;
             case POP   : --sp;                               break;
-            case IADD  : printf("sp[-2] = %d and &sp[-2] = %d\n", sp[-2], &sp[-2]);
-                sp[-2] = bn_IADD((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
-                --sp;  break;//TODO changer IADD
-            case ISUB  : sp[-2] = sp[-2] - sp[-1]; --sp;     break;//TODO changer ISUB
+            case IADD  : sp[-2] = bn_IADD((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
+                --sp;  break;
+            case ISUB  : sp[-2] = bn_ISUBB((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
+                --sp; break;
             case GOTO  : pc += *pc;                          break;
             case IFEQ  : if (*--sp==0) pc += *pc; else pc++; break;
             case IFNE  : if (*--sp!=0) pc += *pc; else pc++; break;
@@ -692,81 +713,10 @@ int main()
     for (i=0; i<26; i++)//TODO doit enlever eventuellement
         if (globals[i] != 0)
             {
-                printf("%c = %d\n", 'a'+i, globals[i]);
-                bn_print((BIG_NUM *)&globals[i]);
+                printf("%c = ", 'a'+i);
+                bn_print_right((BIG_NUM *)globals[i]);
             }
     return 0;
 }
 
 /*---------------------------------------------------------------------------*/
-
-//Algo de petite ecole
-//[12,23,ADD] Pile
-//s[courant] == ADD
-//sp[-2] = 12 (pointeur vers un GE)
-//sp[-1] = 23 ((pointeur vers un GE)
-//TODO il y a une meilleur de le faire avec quelque chose de recursif
-//BIG_NUM addition()
-//{
-//  BIG_NUM bn1 = sp[-2];//En attribu? direct?
-//  BIG_NUM bn2 = sp[-1];
-//
-//  BIG_NUM resultat;
-//
-//  int chiffre1;
-//  int chiffre2;
-//  int ch_re;
-//  CELL *cell1 = bn1.chiffres;
-//  CELL *cell2 = bn2.chiffres;
-//
-//  //Si un des num est 0
-//  if(cell1 == NULL){
-//    return bn2;
-//  }else if(cell2 == NULL){
-//    return bn1;
-//  }
-//
-//  int reste = 0;
-//
-//  while(cell1 != NULL){
-//    if(cell2 != NULL){
-//      chiffre1 = char_to_int(cell1->chiffre);
-//      chiffre2 = char_to_int(cell2->chiffre);
-//
-//      add_big_num(resultat, chiffre1,chiffre2, reste);
-//
-//      bn_new_num(resultat,ch_re);
-//      cell1 = cell1->suivant;
-//      cell2 = cell2->suivant;
-//    }else{
-//      chiffre1 = char_to_int(cell1->chiffre);
-//      chiffre2 = 0;
-//
-//      add_big_num(resultat, chiffre1,chiffre2, reste);
-//
-//      cell1 = cell1->suivant;
-//    }
-//  }
-//  while(cell2 != NULL){//Si le 2e chiffre est plus grand que le premier
-//    chiffre1 = char_to_int(cell2->chiffre);
-//    chiffre2 = 0;
-//
-//    add_big_num(resultat, chiffre1,chiffre2, reste);
-//
-//    cell2 = cell2->suivant;
-//  }
-//  if(reste == 1){//Si il restait une retenue
-//     bn_new_num(resultat,ch_re);
-//  }
-//  return resultat;
-//}//
-//void add_big_num(BIG_NUM resultat, int chiffre1, int chiffre2, int reste){
-//  int ch_re = chiffre1 + chiffre2 + reste;
-//  if(ch_re >= 10){
-//    reste = 1;
-//    ch_re = ch_re % 10;//recupere le chiffre le moin significatif
-//  }else{
-//    reste = 0;
-//  }
-//  bn_new_num(resultat,ch_re);
-//}//
