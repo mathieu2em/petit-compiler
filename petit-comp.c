@@ -114,21 +114,26 @@ BIG_NUM *bn_new_num_reverse(BIG_NUM *bn, char k){
     } else {
         cell->suivant = new_cell(k, NULL);
     }
+    bn->size = (bn->size)+1;
     //printf("test45\n");
     return bn;
 }
 
 void bn_print(BIG_NUM *bn)
 {
-    //printf("t1\n");
-    CELL *c = bn->chiffres;
-    //printf("t2\n");
-    while(c!=NULL)
-        {
-            //printf("t3\n");
-            printf("%c", c->chiffre);
-            c = c->suivant;
-        }
+    if(bn->negatif==1) printf("-");
+    if(bn->size==0) printf("0");
+    else {
+        //printf("t1\n");
+        CELL *c = bn->chiffres;
+        //printf("t2\n");
+        while(c!=NULL)
+            {
+                //printf("t3\n");
+                printf("%c", c->chiffre);
+                c = c->suivant;
+            }
+    }
     printf("\n");
 }
 
@@ -167,7 +172,7 @@ BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
 BIG_NUM *bn_DIV(BIG_NUM *bn){
     BIG_NUM *result = new_big_num();
     if(bn->size==0){
-        printf("ALERT DIVISION BY ZERO");
+        printf("ERROR ZERO DIVISION");
         return 0;
     }
     if(bn->size==1){
