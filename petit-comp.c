@@ -182,6 +182,8 @@ BIG_NUM *bn_MOD(BIG_NUM *bn){
       BIG_NUM *result = new_big_num();
       bn_new_num(result, bn->chiffres->chiffre);
       return result;
+    }
+  }
 }
 // method returns a pointer to cell at position i
 CELL *bn_get_cell(BIG_NUM *bn, int i){
@@ -216,10 +218,8 @@ int bn_bigger(BIG_NUM *a, BIG_NUM *b){
   }
 }
 
-BIG_NUM * bn_ISUBB(BIG_NUM *a, BIG_NUM *b)
+BIG_NUM *bn_ISUBB(BIG_NUM *a, BIG_NUM *b)
 {
-  printf("bn_SUBBx\n");
-  int restant = 0; // store le restant pour prochain calcul
   int temp_result = 0; // store the temporary add result
   int retenue = 0;
   int reverse = 0;
@@ -227,43 +227,44 @@ BIG_NUM * bn_ISUBB(BIG_NUM *a, BIG_NUM *b)
   CELL *ca = a->chiffres; // chiffre 1
   CELL *cb = b->chiffres; // chiffre 2
   BIG_NUM *result = new_big_num();
-  int status = bn_bigger(ca,cb);//Pour pas qu'il le calcule 2 foix
-    if(status == 2){//Si pareil, = 0
-      resultat = new_big_num();
-      return resultat;
-    }else if(status == 0){
+
+  int status = bn_bigger(a,b);//Pour pas qu'il le calcule 2 foix
+  if(status == 2){//Si pareil, = 0
+    result = new_big_num();
+    return result;
+  }else if(status == 0){
     
-      BIG_NUM temp = ca;
-      ca = cb;
-      cb = temp;
-      reverse = 1;
-    }
+    CELL *temp = ca;
+    ca = cb;
+    cb = temp;
+    reverse = 1;
+  }
  
   while(ca!=NULL || cb!=NULL){
-    if(cb==NULL){
-      bn_new_num_reverse(result,ca->chiffre);
-    }else{
-      int a = char_to_int(ca->chiffre);
-      int b = char_to_int(cb->chiffre);
+
+      int ai = char_to_int(ca->chiffre);
+      int bi = ((cb==NULL)?0:char_to_int(cb->chiffre));
       if(retenue == 1){
-        if(a == 0) a = 9;
-        a -= 1;
-        retenue = 0;
+        if(ai == 0){
+          ai = 9;
+        }else{
+          retenue = 0;
+          ai -= 1;
+        }
       }                
-      if(a < b){
-        a += 10;
+      if(ai < bi){
+        ai += 10;
         retenue = 1;
       }
-      temp_result = a - b;
+      temp_result = ai - bi;
       bn_new_num_reverse(result,int_to_char(temp_result));
       if(ca!=NULL) ca = ca->suivant;
       if(ca!=NULL) cb = cb->suivant;
-    }
-  }
-  if(reverse == 1) result->negatif = 1;
-  return result; 
+    if(reverse == 1) result->negatif = 1; 
+  } 
+  bn_verif_correc_zero(result);
+  return result;
 }
-
 
 /* Analyseur lexical. */
 
