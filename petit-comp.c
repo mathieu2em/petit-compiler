@@ -6,13 +6,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "petit-comp.h"
+#include "petit-comp.h" // TODO enlever a la remise
 
 /*---------------------------------------------------------------------------*/
 /* Grands entiers Structure */
 
 typedef struct grand_entier {
-    int size; // number of elements in the bn
+    //int size; // number of elements in the bn
     int negatif;
     struct cellule *chiffres;
 } BIG_NUM;
@@ -56,9 +56,18 @@ CELL *bn_last_cell(BIG_NUM *bn){
         return cell;
     }
 }
+int bn_get_size(BIG_NUM *bn){
+    int count = 0;
+    CELL *c = bn->chiffres;
+    while(c!=NULL){
+        count++;
+        c = c->suivant;
+    }
+    return count;
+}
 // method returns a pointer to cell at position i
 CELL *bn_get_cell(BIG_NUM *bn, int i){
-    if(bn->size <= i){
+    if(bn_get_size(bn) <= i){
         printf("ERROR bn_get_cell");
         return 0;
     }
@@ -71,20 +80,18 @@ CELL *bn_get_cell(BIG_NUM *bn, int i){
 }
 // pop the last non-NULL cell of a big num1
 BIG_NUM *bn_pop(BIG_NUM *bn){
-    if(bn->size==0){
+    if(bn_get_size(bn)==0){
         return bn;
     }
     CELL *cell = bn->chiffres;
     if(cell->suivant==NULL){
         bn->chiffres = NULL;
-        bn->size = 0;
     } else {
         while(cell->suivant->suivant != NULL){
             cell = cell->suivant;
         }
         cell->suivant = NULL;
         free(cell->suivant);
-        bn->size = (bn->size)-1;
     }
     return bn;
 }
@@ -96,7 +103,7 @@ BIG_NUM *new_big_num()
     BIG_NUM *bn = malloc(sizeof(BIG_NUM));
     bn->negatif = 0;
     bn->chiffres = NULL;
-    bn->size = 0;
+
     return bn;
 }
 // rajoute un caractere a un bignum existant
@@ -104,7 +111,7 @@ BIG_NUM *bn_new_num(BIG_NUM *bn, char k)
 {
     CELL *cell = new_cell(k, bn->chiffres);
     bn->chiffres = cell;
-    bn->size=(bn->size)+1;
+
     return bn;
 }
 // verify if big_num has zeros at the start and if so
@@ -113,12 +120,12 @@ BIG_NUM *bn_verif_correc_zero(BIG_NUM *bn)
     while (bn_last_cell(bn)->chiffre=='0')
         {
             bn_pop(bn);
-            bn->size = (bn->size)-1;
         }
     return bn;
 }
 // rajoute un caractere de facon inversee a un big num
-BIG_NUM *bn_new_num_reverse(BIG_NUM *bn, char k){
+BIG_NUM *bn_new_num_reverse(BIG_NUM *bn, char k)
+{
     //printf("test43\n");
     CELL *cell = bn_last_cell(bn);
     //printf("test44\n");
@@ -127,7 +134,6 @@ BIG_NUM *bn_new_num_reverse(BIG_NUM *bn, char k){
     } else {
         cell->suivant = new_cell(k, NULL);
     }
-    bn->size = (bn->size)+1;
     //printf("test45\n");
     return bn;
 }
@@ -135,7 +141,7 @@ BIG_NUM *bn_new_num_reverse(BIG_NUM *bn, char k){
 void bn_print(BIG_NUM *bn)
 {
     if(bn->negatif==1) printf("-");
-    if(bn->size==0) printf("0");
+    if(bn_get_size(bn)==0) printf("0");
     else {
         //printf("t1\n");
         CELL *c = bn->chiffres;
@@ -153,10 +159,10 @@ void bn_print(BIG_NUM *bn)
 void bn_print_right(BIG_NUM *bn)
 {
     if(bn->negatif==1) printf("-");
-    if(bn->size==0) printf("0");
+    if(bn_get_size(bn)==0) printf("0");
     else {
         //printf("t1\n");
-        int i = bn->size;
+        int i = bn_get_size(bn);
         CELL *c = bn_get_cell(bn, --i);
         //printf("t2\n");
         while(i>=0)
@@ -206,11 +212,11 @@ BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
 // divise le resultat du bignum par 10
 BIG_NUM *bn_DIV(BIG_NUM *bn){
     BIG_NUM *result = new_big_num();
-    if(bn->size==0){
+    if(bn_get_size(bn)==0){
         printf("ERROR ZERO DIVISION");
         return 0;
     }
-    if(bn->size==1){
+    if(bn_get_size(bn)==1){
         return result;
     } else {
         CELL *c = bn->chiffres->suivant;
@@ -223,7 +229,7 @@ BIG_NUM *bn_DIV(BIG_NUM *bn){
 }
 // bignum modulo 10
 BIG_NUM *bn_MOD(BIG_NUM *bn){
-    if(bn->size==0){ // si la taille est 1 on retourne le chiffre
+    if(bn_get_size(bn)==0){ // si la taille est 1 on retourne le chiffre
         return new_big_num();
     }
     BIG_NUM *result = new_big_num();
@@ -232,10 +238,12 @@ BIG_NUM *bn_MOD(BIG_NUM *bn){
 // returns true if a is bigger than b else false
 // doesnt check sign nor if bn is illegal
 int bn_bigger(BIG_NUM *a, BIG_NUM *b){
-    if(a->size > b->size) return 1;
-    else if(a->size < b->size) return 0;
+    int size_a = bn_get_size(a);
+    int size_b = bn_get_size(b);
+    if(size_a > size_b) return 1;
+    else if(size_a < size_b) return 0;
     else {
-        int i = a->size;
+        int i = size_a;
         int val_a = 0;
         int val_b = 0;
         while(i-- > 0){
@@ -302,7 +310,7 @@ BIG_NUM *bn_ISUBB(BIG_NUM *a, BIG_NUM *b)
 /* Analyseur lexical. */
 
 enum { DO_SYM, ELSE_SYM, IF_SYM, WHILE_SYM, LBRA, RBRA, LPAR,
-       RPAR, PLUS, MINUS, LESS, SEMI, EQUAL, INT, ID, EOI };
+       RPAR, PLUS, MINUS, LESS, DIV, MOD, SEMI, EQUAL, INT, ID, EOI };
 
 char *words[] = { "do", "else", "if", "while", NULL };
 
@@ -326,6 +334,8 @@ void next_sym()
         case ')': sym = RPAR;  next_ch(); break;
         case '+': sym = PLUS;  next_ch(); break;
         case '-': sym = MINUS; next_ch(); break;
+        case '/': sym = DIV;   next_ch(); break;
+        case '%': sym = MOD;   next_ch(); break;
         case '<': sym = LESS;  next_ch(); break;
         case ';': sym = SEMI;  next_ch(); break;
         case '=': sym = EQUAL; next_ch(); break;
@@ -392,7 +402,7 @@ void next_sym()
 
 /* Analyseur syntaxique. */
 
-enum { VAR, CST, ADD, SUB, LT, ASSIGN,
+enum { VAR, CST, ADD, SUB, DIVI, MODU, LT, ASSIGN,
        IF1, IF2, WHILE, DO, EMPTY, SEQ, EXPR, PROG };
 
 struct node
@@ -432,7 +442,7 @@ node *term() /* <term> ::= <id> | <int> | <paren_expr> */
     else if (sym == INT)     /* <term> ::= <int> */
         {
             x = new_node(CST);
-            x->bn = big_num; // TODO BIG_NUM
+            x->bn = big_num;
             bn_print(x->bn);
             next_sym();
         }
@@ -442,7 +452,7 @@ node *term() /* <term> ::= <id> | <int> | <paren_expr> */
     return x;
 }
 
-node *sum() /* <sum> ::= <term>|<sum>"+"<term>|<sum>"-"<term> */
+node *sum() /* <sum> ::= <term>|<sum>"+"<term>|<sum>"-"<term>*/
 {
     node *x = term();
 
@@ -456,6 +466,19 @@ node *sum() /* <sum> ::= <term>|<sum>"+"<term>|<sum>"-"<term> */
         }
 
     return x;
+}
+
+node *divmod() /* <divmod> ::= <sum>"/"10|<sum>"%"10 */
+{
+  node *x = term();
+
+  node *t = x;
+  x = new_node(sym==DIVI ? DIV : MOD);
+  next_sym();
+  x->o1 = t;
+  //  x->o2 = // TODO not sure if the condition should have already been verified
+  // if not it should verify if the sym if type INT then if it has value 10.
+  // else synthax error.
 }
 
 node *test() /* <test> ::= <sum> | <sum> "<" <sum> */
@@ -608,6 +631,10 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
         case ADD   : c(x->o1); c(x->o2); gi(IADD); break;
 
         case SUB   : c(x->o1); c(x->o2); gi(ISUB); break;
+
+        case DIV   : c(x->o1); c(x->o2); gi(DIV); break;
+
+        case MOD   : c(x->o1); c(x->o2); gi(MOD); break;
 
         case LT    : gi(BIPUSH); g(1);
             c(x->o1);
