@@ -709,6 +709,8 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
 
         case MOD   : c(x->o1); c(x->o2); gi(MOD); break;
 
+        case MUL   : c(x->o1); c(x->o2); gi(IMULT); break;
+
         case LT    : gi(BIPUSH); g(1);
             c(x->o1);
             c(x->o2);
@@ -783,6 +785,7 @@ void run()
                 --sp;  break;
             case ISUB  : sp[-2] = bn_ISUBB((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
                 --sp; break;
+            case IMULT : sp[-2] = bn_mult((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
             case GOTO  : pc += *pc;                          break;
             case IFEQ  : if (*--sp==0) pc += *pc; else pc++; break;
             case IFNE  : if (*--sp!=0) pc += *pc; else pc++; break;
