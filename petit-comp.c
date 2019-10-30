@@ -41,7 +41,8 @@ CELL *new_cell(char k, CELL *next)
     return cell;
 }
 // returns a pointer to last non-NULL cell of a big num
-CELL *bn_last_cell(BIG_NUM *bn){
+CELL *bn_last_cell(BIG_NUM *bn)
+{
     //printf("testt\n");
     CELL *cell = bn->chiffres;
     if(cell == NULL){
@@ -56,7 +57,8 @@ CELL *bn_last_cell(BIG_NUM *bn){
         return cell;
     }
 }
-int bn_get_size(BIG_NUM *bn){
+int bn_get_size(BIG_NUM *bn)
+{
     int count = 0;
     CELL *c = bn->chiffres;
     while(c!=NULL){
@@ -66,7 +68,8 @@ int bn_get_size(BIG_NUM *bn){
     return count;
 }
 // method returns a pointer to cell at position i
-CELL *bn_get_cell(BIG_NUM *bn, int i){
+CELL *bn_get_cell(BIG_NUM *bn, int i)
+{
     if(bn_get_size(bn) <= i){
         printf("ERROR bn_get_cell");
         return 0;
@@ -79,7 +82,8 @@ CELL *bn_get_cell(BIG_NUM *bn, int i){
     return c;
 }
 // pop the last non-NULL cell of a big num1
-BIG_NUM *bn_pop(BIG_NUM *bn){
+BIG_NUM *bn_pop(BIG_NUM *bn)
+{
     if(bn_get_size(bn)==0){
         return bn;
     }
@@ -210,7 +214,8 @@ BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
     return result;
 }
 // divise le resultat du bignum par 10
-BIG_NUM *bn_DIV(BIG_NUM *bn){
+BIG_NUM *bn_DIV(BIG_NUM *bn)
+{
     BIG_NUM *result = new_big_num();
     if(bn_get_size(bn)==0){
         printf("ERROR ZERO DIVISION");
@@ -228,7 +233,8 @@ BIG_NUM *bn_DIV(BIG_NUM *bn){
     return result;
 }
 // bignum modulo 10
-BIG_NUM *bn_MOD(BIG_NUM *bn){
+BIG_NUM *bn_MOD(BIG_NUM *bn)
+{
     if(bn_get_size(bn)==0){ // si la taille est 1 on retourne le chiffre
         return new_big_num();
     }
@@ -237,7 +243,8 @@ BIG_NUM *bn_MOD(BIG_NUM *bn){
 }
 // returns true if a is bigger than b else false
 // doesnt check sign nor if bn is illegal
-int bn_bigger(BIG_NUM *a, BIG_NUM *b){
+int bn_bigger(BIG_NUM *a, BIG_NUM *b)
+{
     int size_a = bn_get_size(a);
     int size_b = bn_get_size(b);
     if(size_a > size_b) return 1;
@@ -306,7 +313,52 @@ BIG_NUM *bn_ISUBB(BIG_NUM *a, BIG_NUM *b)
     bn_verif_correc_zero(result);
     return result;
 }
+BIG_NUM *bn_int_mult(int a, BIG_NUM *b)
+{
+  CELL *c = b->chiffres;
 
+  int result;
+  int retenue = 0;
+
+  BIG_NUM *bn = new_big_num();
+
+  while(c!=NULL){
+    int temp_result = a*char_to_int(c->chiffre)+retenue;
+    if (temp_result > 9){
+      result = temp_result%10;
+      retenue = temp_result/10;
+    } else {
+      result = temp_result;
+      retenue = 0;
+    }
+    bn_new_num_reverse(bn, int_to_char(result));
+    c = c->suivant;
+  }
+  return bn;
+}
+    // multiplication big_nums
+BIG_NUM *bn_mult(BIG_NUM *a, BIG_NUM *b)
+{
+  CELL *c = a->chiffres;
+  int count = 1; // numbers of zero to add
+  BIG_NUM *flusher;
+
+  BIG_NUM *temp_bn = bn_int_mult(char_to_int(c->chiffre), b);// first big num
+  c = c->suivant; // go get next int
+  while(c!=NULL){
+    BIG_NUM *temp_bn2 = bn_int_mult(char_to_int(c->chiffre), b);
+    int i=0;
+    while(i<count){
+      bn_new_num_reverse(temp_bn, '0');
+    }
+    count++;
+    flusher = temp_bn;
+    temp_bn = bn_IADD(temp_bn, temp_bn2);
+    free(flusher);
+    c = c->suivant;
+  }
+  return temp_bn;
+}
 /* Analyseur lexical. */
 
 enum { DO_SYM, ELSE_SYM, IF_SYM, WHILE_SYM, LBRA, RBRA, LPAR,
@@ -476,6 +528,8 @@ node *divmod() /* <divmod> ::= <sum>"/"10|<sum>"%"10 */
   x = new_node(sym==DIVI ? DIV : MOD);
   next_sym();
   x->o1 = t;
+  x->o2 = term();
+  //if(x->o2->type==CST
   //  x->o2 = // TODO not sure if the condition should have already been verified
   // if not it should verify if the sym if type INT then if it has value 10.
   // else synthax error.
