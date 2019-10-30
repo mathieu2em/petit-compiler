@@ -12,9 +12,9 @@
 /* Grands entiers Structure */
 
 typedef struct grand_entier {
-    //int size; // number of elements in the bn
-    int negatif;
-    struct cellule *chiffres;
+  //int size; // number of elements in the bn
+  int negatif;
+  struct cellule *chiffres;
 } BIG_NUM;
 
 typedef struct cellule {
@@ -141,7 +141,7 @@ BIG_NUM *bn_new_num_reverse(BIG_NUM *bn, char k)
     //printf("test45\n");
     return bn;
 }
-
+// prints the big num in the order of the chained list 
 void bn_print(BIG_NUM *bn)
 {
     if(bn->negatif==1) printf("-");
@@ -159,7 +159,7 @@ void bn_print(BIG_NUM *bn)
     }
     printf("\n");
 }
-
+// print the big num in the order of human reading sens
 void bn_print_right(BIG_NUM *bn)
 {
     if(bn->negatif==1) printf("-");
@@ -178,7 +178,7 @@ void bn_print_right(BIG_NUM *bn)
     }
     printf("\n");
 }
-
+// adds two big nums
 BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
 {
     //printf("bn_IADD\n");
@@ -213,7 +213,7 @@ BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
     //bn_print(result);
     return result;
 }
-// divise le resultat du bignum par 10
+// divide big_num result by 10
 BIG_NUM *bn_DIV(BIG_NUM *bn)
 {
     BIG_NUM *result = new_big_num();
@@ -313,6 +313,7 @@ BIG_NUM *bn_ISUBB(BIG_NUM *a, BIG_NUM *b)
     bn_verif_correc_zero(result);
     return result;
 }
+// multiply a big num by an int
 BIG_NUM *bn_int_mult(int a, BIG_NUM *b)
 {
   CELL *c = b->chiffres;
@@ -336,7 +337,7 @@ BIG_NUM *bn_int_mult(int a, BIG_NUM *b)
   }
   return bn;
 }
-    // multiplication big_nums
+// multiply two big nums
 BIG_NUM *bn_mult(BIG_NUM *a, BIG_NUM *b)
 {
   CELL *c = a->chiffres;
@@ -359,10 +360,24 @@ BIG_NUM *bn_mult(BIG_NUM *a, BIG_NUM *b)
   }
   return temp_bn;
 }
+// verifies if big num == 10
+// if so returns true
+int bn_verif_10(BIG_NUM *bn)
+{
+  CELL *c = bn->chiffres;
+  if(c == NULL
+     || c->chiffre!=0
+     || c->suivant == NULL
+     || c->suivant->chiffre!=1){
+    return 0;
+  } else {
+    return 1;
+  }
+}
 /* Analyseur lexical. */
 
 enum { DO_SYM, ELSE_SYM, IF_SYM, WHILE_SYM, LBRA, RBRA, LPAR,
-       RPAR, PLUS, MINUS, LESS, DIV, MOD, SEMI, EQUAL, INT, ID, EOI };
+       RPAR, PLUS, MINUS, MULT, LESS, DIV, MOD, SEMI, EQUAL, INT, ID, EOI };
 
 char *words[] = { "do", "else", "if", "while", NULL };
 
@@ -386,6 +401,7 @@ void next_sym()
         case ')': sym = RPAR;  next_ch(); break;
         case '+': sym = PLUS;  next_ch(); break;
         case '-': sym = MINUS; next_ch(); break;
+        case '*': sym = MULT;  next_ch(); break;
         case '/': sym = DIV;   next_ch(); break;
         case '%': sym = MOD;   next_ch(); break;
         case '<': sym = LESS;  next_ch(); break;
@@ -454,7 +470,7 @@ void next_sym()
 
 /* Analyseur syntaxique. */
 
-enum { VAR, CST, ADD, SUB, DIVI, MODU, LT, ASSIGN,
+enum { VAR, CST, ADD, SUB, MUL, DIVI, MODU, LT, ASSIGN,
        IF1, IF2, WHILE, DO, EMPTY, SEQ, EXPR, PROG };
 
 struct node
@@ -504,35 +520,38 @@ node *term() /* <term> ::= <id> | <int> | <paren_expr> */
     return x;
 }
 
-node *sum() /* <sum> ::= <term>|<sum>"+"<term>|<sum>"-"<term>*/
+node *sum() /* <sum> ::= <term>|<sum>"+"<term>|<sum>"-"<term>|<sum>"*"<term>|
+             <sum>"/"<term>|<sum>"%"<term>*/
+// TODO on va devoir verifier si ca marche
 {
     node *x = term();
 
-    while (sym == PLUS || sym == MINUS)
+    while (sym == PLUS || sym == MINUS || sym == MULT)
         {
             node *t = x;
-            x = new_node(sym==PLUS ? ADD : SUB);
-            next_sym();
-            x->o1 = t;
-            x->o2 = term();
+            if(sym==DIV||sym==MOD){
+              x = new_node(sym==DIV ? DIVI : MODU);
+              next_sym();
+              x->o1 = t;
+              x->o2 = term();
+              if(x->o2->kind==CST){
+                if(bn_verif_10(x->o2->bn)){
+                  // TODO TRAITER SYNTAX ERROR
+                  exit(1); // pas sure lol
+                }
+              } else {
+                // TODO TRAITER SYNTAX ERROR
+                exit(1); // pas sure lol
+              }
+            }else{
+              x = new_node(sym==PLUS ? ADD : (sym==MINUS ? SUB : MUL));
+              next_sym();
+              x->o1 = t;
+              x->o2 = term();
+            }
         }
 
     return x;
-}
-
-node *divmod() /* <divmod> ::= <sum>"/"10|<sum>"%"10 */
-{
-  node *x = term();
-
-  node *t = x;
-  x = new_node(sym==DIVI ? DIV : MOD);
-  next_sym();
-  x->o1 = t;
-  x->o2 = term();
-  //if(x->o2->type==CST
-  //  x->o2 = // TODO not sure if the condition should have already been verified
-  // if not it should verify if the sym if type INT then if it has value 10.
-  // else synthax error.
 }
 
 node *test() /* <test> ::= <sum> | <sum> "<" <sum> */
@@ -657,7 +676,7 @@ node *program()  /* <program> ::= <stat> */
 
 /* Generateur de code. */
 
-enum { ILOAD, ISTORE, BIPUSH, DUP, POP, IADD, ISUB,
+enum { ILOAD, ISTORE, BIPUSH, DUP, POP, IADD, ISUB, IMULT, IDIV, IMOD,
        GOTO, IFEQ, IFNE, IFLT, RETURN };
 
 typedef long int code;
