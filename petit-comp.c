@@ -369,7 +369,8 @@ int bn_verif_10(BIG_NUM *bn)
   if(c == NULL
      || c->chiffre!=0
      || c->suivant == NULL
-     || c->suivant->chiffre!=1){
+     || c->suivant->chiffre!=1
+     || c->suivant->suivant!=NULL){
     return 0;
   } else {
     return 1;
@@ -394,6 +395,7 @@ void next_ch() { ch = getchar(); }
 
 void next_sym()
 {
+  printf("%c\n",ch);
     while (ch == ' ' || ch == '\n') next_ch();
     switch (ch)
         { case '{': sym = LBRA;  next_ch(); break;
@@ -491,6 +493,7 @@ typedef struct node node;
 
 node *new_node(int k)
 {
+  printf("node\n");
     node *x = malloc(sizeof(node));
     x->kind = k;
     return x;
@@ -523,62 +526,46 @@ node *term() /* <term> ::= <id> | <int> | <paren_expr> */
 
 node *mult()// <term>|<mult>"*"<term>|<mult>"/""10" |<mult>"%""10
 {
-  node *x = ((sym==MULT || sym==DIV || sym==MODU) ? mult() : term());
-
-  while (sym==MULT || sym==DIV || sym==MODU)
+  printf("mult\n");
+  node *x = term();
+  while (sym==MULT || sym==DIV || sym==MOD)
     {
       node *t = x;
-      x = new_node(sym==DIV ? DIVI : MODU);//TODO add mult
-      next_sym();
-      x->o1 = t;
-      if (sym==MULT){
-        x->o2 = term();//TODO tester pour terme
-      }else{
-        if(x->o2->kind==CST){
-        if(bn_verif_10(x->o2->bn)){
-          // TODO TRAITER SYNTAX ERROR
-          exit(1); // pas sure lol
-        }
+      if(sym==DIV||sym==MOD){
+        x = new_node(sym==DIV ? DIVI : MODU);
+        next_sym();
+        x->o1 = t;
+        x->o2 = term();
+        // has to be 10
+        if(!(x->o2->kind==CST) || bn_verif_10(x->o2->bn)) syntax_error();
       } else {
-        // TODO TRAITER SYNTAX ERROR
-        exit(1); // pas sure lol
-      }
+        x = new_node(MUL);
+        next_sym();
+        x->o1 = t;
+        x->o2 = term();//TODO tester pour terme
       }
     }
+  return x;
 }
 
-node *sum() /* <sum> ::= <term>|<sum>"+"<term>|<sum>"-"<term>|*/
-// TODO on va devoir verifier si ca marche
+node *sum() /* <sum> ::= <mult>|<sum>"+"<mult>|<sum>"-"<mult> */
 {
+  printf("sum\n");
     node *x = mult();
+    printf("sum2\n");
 
-    while (sym == PLUS || sym == MINUS || sym == MULT)
+    while (sym == PLUS || sym == MINUS)
         {
             node *t = x;
-            if(sym==DIV||sym==MOD){//TODO enlever
-              x = new_node(sym==DIV ? DIVI : MODU);
-              next_sym();
-              x->o1 = t;
-              x->o2 = term();
-              if(x->o2->kind==CST){
-                if(bn_verif_10(x->o2->bn)){
-                  // TODO TRAITER SYNTAX ERROR
-                  exit(1); // pas sure lol
-                }
-              } else {
-                // TODO TRAITER SYNTAX ERROR
-                exit(1); // pas sure lol
-              }
-            }else{
-              x = new_node(sym==PLUS ? ADD : (sym==MINUS ? SUB : MUL));
-              next_sym();
-              x->o1 = t;
-              x->o2 = term();
-            }
+            x = new_node(sym==PLUS ? ADD : SUB);
+            next_sym();
+            x->o1 = t;
+            x->o2 = mult();
         }
 
     return x;
 }
+
 
 node *test() /* <test> ::= <sum>|<sum>"<"<sum>*/
 //TODO <sum>"<="<sum>|<sum>">"<sum>|<sum>">="<sum>|<sum>"=="<sum>|<sum>"!="<sum>
@@ -599,6 +586,7 @@ node *test() /* <test> ::= <sum>|<sum>"<"<sum>*/
 
 node *expr() /* <expr> ::= <test> | <id> "=" <expr> */
 {
+  printf("expr\n");
     node *x;
 
     if (sym != ID) return test();
@@ -619,6 +607,7 @@ node *expr() /* <expr> ::= <test> | <id> "=" <expr> */
 
 node *paren_expr() /* <paren_expr> ::= "(" <expr> ")" */
 {
+  printf("paren_expr\n");
     node *x;
 
     if (sym == LPAR) next_sym(); else syntax_error();
@@ -632,6 +621,7 @@ node *paren_expr() /* <paren_expr> ::= "(" <expr> ")" */
 
 node *statement()//TODO "print" <paren_expr>";"| "break"";"|"continue"";"
 {
+  printf("statement\n");
     node *x;
 
     if (sym == IF_SYM)       /* "if" <paren_expr> <stat> */
@@ -692,8 +682,11 @@ node *statement()//TODO "print" <paren_expr>";"| "break"";"|"continue"";"
 
 node *program()  /* <program> ::= <stat> */
 {
+  printf("program\n");
     node *x = new_node(PROG);
+    printf("prog2\n");
     next_sym();
+    printf("ns\n");
     x->o1 = statement();
     if (sym != EOI) syntax_error();
     return x;
@@ -833,8 +826,10 @@ void run()
 int main()
 {
     int i;
+    printf("test0\n");
 
     c(program());//Cree la liste des operations
+    printf("test1\n");
 
 #ifdef SHOW_CODE
     printf("\n");
