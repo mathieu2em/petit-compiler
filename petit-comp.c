@@ -378,7 +378,7 @@ int bn_verif_10(BIG_NUM *bn)
 /* Analyseur lexical. */
 
 enum { DO_SYM, ELSE_SYM, IF_SYM, WHILE_SYM, LBRA, RBRA, LPAR,
-       RPAR, PLUS, MINUS, MULT, LESS, DIV, MOD, SEMI, EQUAL, INT, ID, EOI };
+       RPAR, PLUS, MINUS, MULT, LESS, BIGGER, DIV, MOD, SEMI, EQUAL, INT, ID, EOI };
 
 char *words[] = { "do", "else", "if", "while", NULL };
 
@@ -406,6 +406,7 @@ void next_sym()
         case '/': sym = DIV;   next_ch(); break;
         case '%': sym = MOD;   next_ch(); break;
         case '<': sym = LESS;  next_ch(); break;
+        case '>': sym = BIGGER;next_ch(); break;
         case ';': sym = SEMI;  next_ch(); break;
         case '=': sym = EQUAL; next_ch(); break;
         case EOF: sym = EOI;   next_ch(); break;
@@ -471,7 +472,7 @@ void next_sym()
 
 /* Analyseur syntaxique. */
 
-enum { VAR, CST, ADD, SUB, MUL, DIVI, MODU, LT, ASSIGN,
+enum { VAR, CST, ADD, SUB, MUL, DIVI, MODU, LT, BT, LEQ, BEQ, EQ, ASSIGN,
        IF1, IF2, WHILE, DO, EMPTY, SEQ, EXPR, PROG };
 
 struct node
@@ -535,14 +536,14 @@ node *mult()// <term>|<mult>"*"<term>|<mult>"/""10" |<mult>"%""10
         x->o2 = term();//TODO tester pour terme
       }else{
         if(x->o2->kind==CST){
-        if(bn_verif_10(x->o2->bn)){
+          if(bn_verif_10(x->o2->bn)){
+            // TODO TRAITER SYNTAX ERROR
+            exit(1); // pas sure lol
+          }
+        } else {
           // TODO TRAITER SYNTAX ERROR
           exit(1); // pas sure lol
         }
-      } else {
-        // TODO TRAITER SYNTAX ERROR
-        exit(1); // pas sure lol
-      }
       }
     }
 }
@@ -559,7 +560,7 @@ node *sum() /* <sum> ::= <term>|<sum>"+"<term>|<sum>"-"<term>|*/
               x = new_node(sym==DIV ? DIVI : MODU);
               next_sym();
               x->o1 = t;
-              x->o2 = term();
+              x->o2 = sum();
               if(x->o2->kind==CST){
                 if(bn_verif_10(x->o2->bn)){
                   // TODO TRAITER SYNTAX ERROR
@@ -584,15 +585,25 @@ node *test() /* <test> ::= <sum>|<sum>"<"<sum>*/
 //TODO <sum>"<="<sum>|<sum>">"<sum>|<sum>">="<sum>|<sum>"=="<sum>|<sum>"!="<sum>
 {
     node *x = sum();
-
+    
     if (sym == LESS)
         {
             node *t = x;
-            x = new_node(LT);
             next_sym();
+            x = (EQUAL ? new_node(LEQ) : new_node(LT));// "<=" | "<"
+            //x = new_node(LT);
             x->o1 = t;
             x->o2 = sum();
         }
+    else if(sym == BIGGER)
+      {
+        node *t = x;
+        next_sym();//TODO continuer
+    }
+    else
+      {
+        syntax_error();
+      }
 
     return x;
 }
