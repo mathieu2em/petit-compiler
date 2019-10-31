@@ -350,7 +350,8 @@ BIG_NUM *bn_mult(BIG_NUM *a, BIG_NUM *b)
     BIG_NUM *temp_bn2 = bn_int_mult(char_to_int(c->chiffre), b);
     int i=0;
     while(i<count){
-      bn_new_num_reverse(temp_bn, '0');
+      bn_new_num(temp_bn2, '0');
+      i++;
     }
     count++;
     flusher = temp_bn;
