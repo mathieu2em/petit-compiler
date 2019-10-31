@@ -521,16 +521,41 @@ node *term() /* <term> ::= <id> | <int> | <paren_expr> */
     return x;
 }
 
-node *sum() /* <sum> ::= <term>|<sum>"+"<term>|<sum>"-"<term>|<sum>"*"<term>|
-             <sum>"/"<term>|<sum>"%"<term>*/
+node *mult()// <term>|<mult>"*"<term>|<mult>"/""10" |<mult>"%""10
+{
+  node *x = ((sym==MULT || sym==DIV || sym==MODU) ? mult() : term());
+
+  while (sym==MULT || sym==DIV || sym==MODU)
+    {
+      node *t = x;
+      x = new_node(sym==DIV ? DIVI : MODU);//TODO add mult
+      next_sym();
+      x->o1 = t;
+      if (sym==MULT){
+        x->o2 = term();//TODO tester pour terme
+      }else{
+        if(x->o2->kind==CST){
+        if(bn_verif_10(x->o2->bn)){
+          // TODO TRAITER SYNTAX ERROR
+          exit(1); // pas sure lol
+        }
+      } else {
+        // TODO TRAITER SYNTAX ERROR
+        exit(1); // pas sure lol
+      }
+      }
+    }
+}
+
+node *sum() /* <sum> ::= <term>|<sum>"+"<term>|<sum>"-"<term>|*/
 // TODO on va devoir verifier si ca marche
 {
-    node *x = term();
+    node *x = mult();
 
     while (sym == PLUS || sym == MINUS || sym == MULT)
         {
             node *t = x;
-            if(sym==DIV||sym==MOD){
+            if(sym==DIV||sym==MOD){//TODO enlever
               x = new_node(sym==DIV ? DIVI : MODU);
               next_sym();
               x->o1 = t;
@@ -555,7 +580,8 @@ node *sum() /* <sum> ::= <term>|<sum>"+"<term>|<sum>"-"<term>|<sum>"*"<term>|
     return x;
 }
 
-node *test() /* <test> ::= <sum> | <sum> "<" <sum> */
+node *test() /* <test> ::= <sum>|<sum>"<"<sum>*/
+//TODO <sum>"<="<sum>|<sum>">"<sum>|<sum>">="<sum>|<sum>"=="<sum>|<sum>"!="<sum>
 {
     node *x = sum();
 
@@ -604,7 +630,7 @@ node *paren_expr() /* <paren_expr> ::= "(" <expr> ")" */
     return x;
 }
 
-node *statement()
+node *statement()//TODO "print" <paren_expr>";"| "break"";"|"continue"";"
 {
     node *x;
 
