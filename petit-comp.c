@@ -379,7 +379,7 @@ int bn_verif_10(BIG_NUM *bn)
 /* Analyseur lexical. */
 
 enum { DO_SYM, ELSE_SYM, IF_SYM, WHILE_SYM, LBRA, RBRA, LPAR,
-       RPAR, PLUS, MINUS, MULT, LESS, BIGGER, DIV, MOD, SEMI, EQUAL, INT, ID, EOI };
+       RPAR, PLUS, MINUS, MULT, LESS, BIGGER, DIV, MOD, SEMI, EQUAL, INT, ID, EOI, NOT };
 
 char *words[] = { "do", "else", "if", "while", NULL };
 
@@ -411,6 +411,7 @@ void next_sym()
         case '>': sym = BIGGER;next_ch(); break;
         case ';': sym = SEMI;  next_ch(); break;
         case '=': sym = EQUAL; next_ch(); break;
+        case '!': sym = NOT;   next_ch(); break;
         case EOF: sym = EOI;   next_ch(); break;
         default:
             if (ch >= '0' && ch <= '9'){
@@ -475,7 +476,7 @@ void next_sym()
 /* Analyseur syntaxique. */
 
 enum { VAR, CST, ADD, SUB, MUL, DIVI, MODU, LT, BT, LEQ, BEQ, EQ, ASSIGN,
-       IF1, IF2, WHILE, DO, EMPTY, SEQ, EXPR, PROG };
+       IF1, IF2, WHILE, DO, EMPTY, SEQ, EXPR, PROG, NOTS};
 
 struct node
 {
@@ -549,7 +550,7 @@ node *mult()// <term>|<mult>"*"<term>|<mult>"/""10" |<mult>"%""10
   return x;
 }
 
-node *sum() /* <sum> ::= <mult>|<sum>"+"<mult>|<sum>"-"<mult> */
+node *sum() /* <sum> ::= <mult>|<sum>"+"<mult>|<sum>"-"<mult>*/
 {
   printf("sum\n");
     node *x = mult();
@@ -572,12 +573,12 @@ node *test() /* <test> ::= <sum>|<sum>"<"<sum>*/
 //TODO <sum>"<="<sum>|<sum>">"<sum>|<sum>">="<sum>|<sum>"=="<sum>|<sum>"!="<sum>
 {
     node *x = sum();
-    
+
     if (sym == LESS)
         {
             node *t = x;
             next_sym();
-            x = (EQUAL ? new_node(LEQ) : new_node(LT));// "<=" | "<"
+            x = new_node(sym==EQUAL ? LEQ : LT);// "<=" | "<"
             //x = new_node(LT);
             x->o1 = t;
             x->o2 = sum();
@@ -586,6 +587,17 @@ node *test() /* <test> ::= <sum>|<sum>"<"<sum>*/
       {
         node *t = x;
         next_sym();//TODO continuer
+        x = (sym == EQUAL ? new_node(BEQ) : new_node(BT));// ">=" | ">"
+    }
+    else if(sym == EQUAL){
+      node *t = x;
+      next_sym();
+      sym == EQUAL ? new_node(EQ) : syntax_error();// "==" | syntax error
+    }
+    else if(sym == NOT){
+      node *t = x;
+      next_sym();
+      sym == EQUAL ? new_node(NOTS) : syntax_error(); // "!= | syntax error
     }
     else
       {
