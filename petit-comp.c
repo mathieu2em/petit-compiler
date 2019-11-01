@@ -141,7 +141,7 @@ BIG_NUM *bn_new_num_reverse(BIG_NUM *bn, char k)
     //printf("test45\n");
     return bn;
 }
-// prints the big num in the order of the chained list 
+// prints the big num in the order of the chained list
 void bn_print(BIG_NUM *bn)
 {
     if(bn->negatif==1) printf("-");
@@ -367,19 +367,29 @@ int bn_verif_10(BIG_NUM *bn)
 {
   CELL *c = bn->chiffres;
   if(c == NULL
-     || c->chiffre!=0
+     || c->chiffre!='0'
      || c->suivant == NULL
-     || c->suivant->chiffre!=1
+     || c->suivant->chiffre!='1'
      || c->suivant->suivant!=NULL){
     return 0;
   } else {
     return 1;
   }
 }
+// returns 1 if big nums are equals
+int bn_IEQ(BIG_NUM *a, BIG_NUM *b)
+{
+    int result = bn_bigger(a, b);
+    if(result == 2){
+        return 1;
+    } else {
+        return 0;
+    }
+}
 /* Analyseur lexical. */
 
 enum { DO_SYM, ELSE_SYM, IF_SYM, WHILE_SYM, LBRA, RBRA, LPAR,
-       RPAR, PLUS, MINUS, MULT, LESS, BIGGER, DIV, MOD, SEMI, EQUAL, INT, ID, EOI, NOT };
+       RPAR, PLUS, MINUS, MULT, LESS, BIGGER, DIV, MOD, SEMI, EQUAL, EQUALS, INT, ID, EOI, NOT };
 
 char *words[] = { "do", "else", "if", "while", NULL };
 
@@ -410,7 +420,6 @@ void next_sym()
         case '<': sym = LESS;  next_ch(); break;
         case '>': sym = BIGGER;next_ch(); break;
         case ';': sym = SEMI;  next_ch(); break;
-        case '=': sym = EQUAL; next_ch(); break;
         case '!': sym = NOT;   next_ch(); break;
         case EOF: sym = EOI;   next_ch(); break;
         default:
@@ -467,6 +476,19 @@ void next_sym()
                             if (id_name[1] == '\0') sym = ID; else syntax_error();
                         }
                 }
+            else if (ch == '=')
+              {
+                int i = 0;
+
+                next_ch();
+                while (ch == '=')
+                  {
+                    i++;
+                    if(i>1) syntax_error();
+                    next_ch();
+                  }
+                sym = (i==0? EQUAL : EQUALS);
+              }
             else syntax_error();
         }
 }
@@ -476,7 +498,7 @@ void next_sym()
 /* Analyseur syntaxique. */
 
 enum { VAR, CST, ADD, SUB, MUL, DIVI, MODU, LT, BT, LEQ, BEQ, EQ, ASSIGN,
-       IF1, IF2, WHILE, DO, EMPTY, SEQ, EXPR, PROG, NOTS};
+       IF1, IF2, WHILE, DO, EMPTY, SEQ, EXPR, PROG, NOT_EQUAL};
 
 struct node
 {
@@ -539,7 +561,9 @@ node *mult()// <term>|<mult>"*"<term>|<mult>"/""10" |<mult>"%""10
         x->o1 = t;
         x->o2 = term();
         // has to be 10
-        if(!(x->o2->kind==CST) || bn_verif_10(x->o2->bn)) syntax_error();
+        if(!(x->o2->kind==CST) || !(bn_verif_10(x->o2->bn))){
+          syntax_error();
+        }
       } else {
         x = new_node(MUL);
         next_sym();
@@ -573,39 +597,36 @@ node *test() /* <test> ::= <sum>|<sum>"<"<sum>*/
 //TODO <sum>"<="<sum>|<sum>">"<sum>|<sum>">="<sum>|<sum>"=="<sum>|<sum>"!="<sum>
 {
     node *x = sum();
+    if (sym == LESS   ||
+        sym == BIGGER ||
+        sym == EQUALS ||
+        sym == NOT){
 
-    if (sym == LESS)
-        {
-            node *t = x;
-            next_sym();
-            x = new_node(sym==EQUAL ? LEQ : LT);// "<=" | "<"
-            //x = new_node(LT);
-            x->o1 = t;
-            x->o2 = sum();
-        }
-    else if(sym == BIGGER)
-      {
         node *t = x;
-        next_sym();//TODO continuer
-        x = (sym == EQUAL ? new_node(BEQ) : new_node(BT));// ">=" | ">"
+        if (sym == LESS)
+            {
+                next_sym();
+                x = new_node(sym==EQUAL ? LEQ : LT);// "<=" | "<"
+            }
+        else if(sym == BIGGER)
+            {
+                next_sym();
+                x = new_node(sym==EQUAL ? BEQ : BT);// ">=" | ">"
+            }
+        else if(sym == EQUALS)// "=="
+            x = new_node(EQ);
+        else   // (sym == NOT)
+            {
+                next_sym();
+                if(sym != EQUAL) syntax_error();
+                x = new_node(NOT_EQUAL); // "!= | syntax error
+            }
+        x->o1=t;
+        x->o1=sum();
     }
-    else if(sym == EQUAL){
-      node *t = x;
-      next_sym();
-      sym == EQUAL ? new_node(EQ) : syntax_error();// "==" | syntax error
-    }
-    else if(sym == NOT){
-      node *t = x;
-      next_sym();
-      sym == EQUAL ? new_node(NOTS) : syntax_error(); // "!= | syntax error
-    }
-    else
-      {
-        syntax_error();
-      }
-
     return x;
 }
+
 
 node *expr() /* <expr> ::= <test> | <id> "=" <expr> */
 {
@@ -720,7 +741,7 @@ node *program()  /* <program> ::= <stat> */
 /* Generateur de code. */
 
 enum { ILOAD, ISTORE, BIPUSH, DUP, POP, IADD, ISUB, IMULT, IDIV, IMOD,
-       GOTO, IFEQ, IFNE, IFLT, RETURN };
+       GOTO, IEQ, IFEQ, IFNE, IFLT, RETURN };
 
 typedef long int code;
 
@@ -761,6 +782,8 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
             gi(IFLT); g(4);
             gi(POP);
             gi(BIPUSH); g(0); break;
+
+        case EQ    : c(x->o1); c(x->o2); gi(IEQ); break;
 
         case ASSIGN: c(x->o2);
             gi(DUP);
@@ -827,13 +850,13 @@ void run()
             case IADD  : sp[-2] = bn_IADD((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
                 --sp;  break;
             case ISUB  : sp[-2] = bn_ISUBB((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
-              --sp; break;
+                --sp; break;
             case IMULT : sp[-2] = bn_mult((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
-              --sp; break;
-            case IDIV  : sp[-2] = bn_DIV((BIG_NUM *)sp[-2]);//TODO Cest peut etre sp[-1]
-              --sp; break;
-            case IMOD  : sp[-2] = bn_MOD((BIG_NUM *)sp[-2]);//TODO same
-              --sp; break;
+                --sp; break;
+            case IDIV  : sp[-2] = bn_DIV((BIG_NUM *)sp[-2]); --sp; break;
+            case IMOD  : sp[-2] = bn_MOD((BIG_NUM *)sp[-2]); --sp; break;
+            case IEQ   : sp[-2] = bn_IEQ((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
+                --sp; break;
             case GOTO  : pc += *pc;                          break;
             case IFEQ  : if (*--sp==0) pc += *pc; else pc++; break;
             case IFNE  : if (*--sp!=0) pc += *pc; else pc++; break;
