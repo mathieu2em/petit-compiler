@@ -147,12 +147,9 @@ void bn_print(BIG_NUM *bn)
     if(bn->negatif==1) printf("-");
     if(bn_get_size(bn)==0) printf("0");
     else {
-        //printf("t1\n");
         CELL *c = bn->chiffres;
-        //printf("t2\n");
         while(c!=NULL)
             {
-                //printf("t3\n");
                 printf("%c", c->chiffre);
                 c = c->suivant;
             }
@@ -241,7 +238,9 @@ BIG_NUM *bn_MOD(BIG_NUM *bn)
     BIG_NUM *result = new_big_num();
     return bn_new_num(result, bn->chiffres->chiffre);
 }
-// returns true if a is bigger than b else false
+// 1 if a>b
+// 2 if a==b
+// 0 of a,b
 // doesnt check sign nor if bn is illegal
 int bn_bigger(BIG_NUM *a, BIG_NUM *b)
 {
@@ -376,22 +375,56 @@ int bn_verif_10(BIG_NUM *bn)
     return 1;
   }
 }
+// returns a BIG_NUM containing 0 or 1 // TODO verifier si on en a encore besoin
+BIG_NUM *bn_bool(int n)
+{
+    BIG_NUM *bn = new_big_num();
+    if(n>0) bn_new_num(bn, '1');
+    return bn;
+}
 // returns 1 if big nums are equals
 int bn_IEQ(BIG_NUM *a, BIG_NUM *b)
 {
+    //printf("BNIEQ\n");
     int result = bn_bigger(a, b);
-    if(result == 2){
-        return 1;
-    } else {
-        return 0;
-    }
+    if(result == 2) return 1;
+    return 0;
+}
+// !bn_IEQ
+int bn_INEQ(BIG_NUM *a, BIG_NUM *b)
+{
+    int result = bn_bigger(a, b);
+    if(result != 2) return 1;
+    return 0;
+}
+// returns a big num containing 1 or 0 depending on result
+int bn_IBT(BIG_NUM *a, BIG_NUM *b)
+{
+    if(bn_bigger(a,b)==1) return 1;
+    return 0;
+}
+// returns big num 1 if a>=b else big num 0
+int bn_IBEQ(BIG_NUM *a, BIG_NUM *b)
+{
+    if(bn_bigger(a,b)) return 1;
+    return 0;
+}
+// returns bn 1 if a<b else bn 0
+int bn_IFLT(BIG_NUM *a, BIG_NUM *b)
+{
+    return bn_IBEQ(b,a);
+}
+// bn 1 if a<=b else bn 0
+int bn_IFLEQ(BIG_NUM *a, BIG_NUM *b)
+{
+    return bn_IBT(b, a);
 }
 /* Analyseur lexical. */
 
-enum { DO_SYM, ELSE_SYM, IF_SYM, WHILE_SYM, LBRA, RBRA, LPAR,
+enum { DO_SYM, ELSE_SYM, IF_SYM, WHILE_SYM, BREAK_SYM, CONTINUE_SYM, PRINT_SYM, LBRA, RBRA, LPAR,
        RPAR, PLUS, MINUS, MULT, LESS, BIGGER, DIV, MOD, SEMI, EQUAL, EQUALS, INT, ID, EOI, NOT };
 
-char *words[] = { "do", "else", "if", "while", NULL };
+char *words[] = { "do", "else", "if", "while", "break", "continue", "print", NULL };
 
 int ch = ' ';
 int sym;
@@ -478,16 +511,22 @@ void next_sym()
                 }
             else if (ch == '=')
               {
+                  printf("we got an equal\n");
                 int i = 0;
 
                 next_ch();
                 while (ch == '=')
                   {
+                      printf("and a second one\n");
                     i++;
-                    if(i>1) syntax_error();
+                    if(i>1){
+                      printf("too many equals\n");
+                      syntax_error();
+                    }
                     next_ch();
                   }
                 sym = (i==0? EQUAL : EQUALS);
+                printf("%d\n", sym);
               }
             else syntax_error();
         }
@@ -498,7 +537,7 @@ void next_sym()
 /* Analyseur syntaxique. */
 
 enum { VAR, CST, ADD, SUB, MUL, DIVI, MODU, LT, BT, LEQ, BEQ, EQ, ASSIGN,
-       IF1, IF2, WHILE, DO, EMPTY, SEQ, EXPR, PROG, NOT_EQUAL};
+       IF1, IF2, WHILE, BREAK, CONTINUE, PRINT, DO, EMPTY, SEQ, EXPR, PROG, NEQ};
 
 struct node
 {
@@ -596,6 +635,7 @@ node *sum() /* <sum> ::= <mult>|<sum>"+"<mult>|<sum>"-"<mult>*/
 node *test() /* <test> ::= <sum>|<sum>"<"<sum>*/
 //TODO <sum>"<="<sum>|<sum>">"<sum>|<sum>">="<sum>|<sum>"=="<sum>|<sum>"!="<sum>
 {
+    printf("test\n");
     node *x = sum();
     if (sym == LESS   ||
         sym == BIGGER ||
@@ -613,16 +653,21 @@ node *test() /* <test> ::= <sum>|<sum>"<"<sum>*/
                 next_sym();
                 x = new_node(sym==EQUAL ? BEQ : BT);// ">=" | ">"
             }
-        else if(sym == EQUALS)// "=="
+        else if(sym == EQUALS)
+            {// "=="
+            printf("test equals\n");
             x = new_node(EQ);
-        else   // (sym == NOT)
+            next_sym();
+            }
+        else //(sym == NOT)
             {
                 next_sym();
                 if(sym != EQUAL) syntax_error();
-                x = new_node(NOT_EQUAL); // "!= | syntax error
+                x = new_node(NEQ); // "!= | syntax error
             }
         x->o1=t;
-        x->o1=sum();
+        x->o2=sum();
+        printf("testsuccess\n");
     }
     return x;
 }
@@ -679,6 +724,22 @@ node *statement()//TODO "print" <paren_expr>";"| "break"";"|"continue"";"
                     next_sym();
                     x->o3 = statement();
                 }
+        }
+    else if (sym == BREAK_SYM)
+        {
+            x = new_node(BREAK);
+            next_sym();
+        }
+    else if (sym == CONTINUE_SYM)
+        {
+            x = new_node(CONTINUE);
+            next_sym();
+        }
+    else if (sym == PRINT_SYM)
+        {
+            x = new_node(PRINT);
+            next_sym();
+            x->o1 = paren_expr();
         }
     else if (sym == WHILE_SYM) /* "while" <paren_expr> <stat> */
         {
@@ -741,7 +802,7 @@ node *program()  /* <program> ::= <stat> */
 /* Generateur de code. */
 
 enum { ILOAD, ISTORE, BIPUSH, DUP, POP, IADD, ISUB, IMULT, IDIV, IMOD,
-       GOTO, IEQ, IFEQ, IFNE, IFLT, RETURN };
+       GOTO, IEQ, INEQ, IBT, IBEQ, IFEQ, IFNE, IFLT, IFLEQ, RETURN };
 
 typedef long int code;
 
@@ -751,7 +812,7 @@ void gen(code c) { *here++ = c; } /* overflow? */ //rempli la pile de la MC
 
 #ifdef SHOW_CODE
 #define g(c) do { printf(" %d",c); gen(c); } while (0)
-#define gi(c) do { printf("\n%s", #c); gen(c); } while (0)
+#define gi(c) do { printf("%s\n", #c); gen(c); } while (0)
 #else
 #define g(c) gen(c)
 #define gi(c) gen(c)
@@ -763,11 +824,11 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
 { switch (x->kind)
         { case VAR   : gi(ILOAD); g(x->val); break;
 
-        case CST   : gi(BIPUSH); g(x->bn); break; // TODO au lieu de changer val pour bn faire un union et une var qui dit quel aller chercher selon sam hyvon
+        case CST   : printf("CST\n");gi(BIPUSH); g(x->bn); break;
 
-        case ADD   : c(x->o1); c(x->o2); gi(IADD); break;
+        case ADD   : printf("ADD\n");c(x->o1); c(x->o2); gi(IADD); break;
 
-        case SUB   : c(x->o1); c(x->o2); gi(ISUB); break;
+        case SUB   : printf("SUB\n");c(x->o1); c(x->o2); gi(ISUB); break;
 
         case DIVI   : c(x->o1); c(x->o2); gi(IDIV); break;
 
@@ -775,15 +836,13 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
 
         case MUL   : c(x->o1); c(x->o2); gi(IMULT); break;
 
-        case LT    : gi(BIPUSH); g(1);
-            c(x->o1);
-            c(x->o2);
-            gi(ISUB);
-            gi(IFLT); g(4);
-            gi(POP);
-            gi(BIPUSH); g(0); break;
+        case LT    : c(x->o1); c(x->o2); gi(IFLT);  break;
+        case LEQ   : c(x->o1); c(x->o2); gi(IFLEQ); break;
 
-        case EQ    : c(x->o1); c(x->o2); gi(IEQ); break;
+        case EQ    : printf("EQ\n") ;c(x->o1); c(x->o2); gi(IEQ); break;
+        case NEQ   : printf("NEQ\n") ;c(x->o1); c(x->o2); gi(INEQ); break;
+        case BT    : printf("BT\n") ;c(x->o1); c(x->o2); gi(IBT); break;
+        case BEQ   : printf("BEQ\n");c(x->o1); c(x->o2); gi(IBEQ); break;
 
         case ASSIGN: c(x->o2);
             gi(DUP);
@@ -857,10 +916,19 @@ void run()
             case IMOD  : sp[-2] = bn_MOD((BIG_NUM *)sp[-2]); --sp; break;
             case IEQ   : sp[-2] = bn_IEQ((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
                 --sp; break;
+            case INEQ  : sp[-2] = bn_INEQ((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
+                --sp; break;
+            case IBT   : sp[-2] = bn_IBT((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
+                --sp; break;
+            case IBEQ  : sp[-2] = bn_IBEQ((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
+                --sp; break;
             case GOTO  : pc += *pc;                          break;
             case IFEQ  : if (*--sp==0) pc += *pc; else pc++; break;
             case IFNE  : if (*--sp!=0) pc += *pc; else pc++; break;
-            case IFLT  : if (*--sp< 0) pc += *pc; else pc++; break;
+            case IFLT  : sp[-2] = bn_IFLT((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
+                --sp; break;
+            case IFLEQ: sp[-2] = bn_IFLEQ((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
+                --sp; break;
             case RETURN: return;
             }
 }
@@ -883,14 +951,18 @@ int main()
 
     for (i=0; i<26; i++) // Initie la liste des variables globales
         globals[i] = 0;
-
+    printf("bfr run\n");
     run(); //Fait les operations etapes par etapes selon la pile cree dans c(programs())
 
     for (i=0; i<26; i++)//TODO doit enlever eventuellement
         if (globals[i] != 0)
             {
                 printf("%c = ", 'a'+i);
-                bn_print_right((BIG_NUM *)globals[i]);
+                if(globals[i]==0||globals[i]==1){
+                    printf("%ld",globals[i]);
+                } else {
+                    bn_print_right((BIG_NUM *)globals[i]);
+                }
             }
     return 0;
 }
