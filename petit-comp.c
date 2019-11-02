@@ -208,6 +208,7 @@ BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
         }
     if(restant!=0) bn_new_num_reverse(result, int_to_char(restant));
     //bn_print(result);
+    //printf("rendu icitte\n");
     return result;
 }
 // divide big_num result by 10
@@ -412,17 +413,16 @@ int bn_IBEQ(BIG_NUM *a, BIG_NUM *b)
 // returns bn 1 if a<b else bn 0
 int bn_IFLT(BIG_NUM *a, BIG_NUM *b)
 {
-    return bn_IBEQ(b,a);
+    return !bn_IBEQ(a,b);
 }
 // bn 1 if a<=b else bn 0
 int bn_IFLEQ(BIG_NUM *a, BIG_NUM *b)
 {
-    return bn_IBT(b, a);
+    return !bn_IBT(a, b);
 }
 /* Analyseur lexical. */
 
-enum { DO_SYM, ELSE_SYM, IF_SYM, WHILE_SYM, BREAK_SYM, CONTINUE_SYM, PRINT_SYM, LBRA, RBRA, LPAR,
-       RPAR, PLUS, MINUS, MULT, LESS, BIGGER, DIV, MOD, SEMI, EQUAL, EQUALS, INT, ID, EOI, NOT };
+enum { DO_SYM, ELSE_SYM, IF_SYM, WHILE_SYM, BREAK_SYM, CONTINUE_SYM, PRINT_SYM, LBRA, RBRA, LPAR, RPAR, PLUS, MINUS, MULT, LESS, BIGGER, DIV, MOD, SEMI, EQUAL, EQUALS, INT, ID, EOI, NOT };
 
 char *words[] = { "do", "else", "if", "while", "break", "continue", "print", NULL };
 
@@ -466,16 +466,12 @@ void next_sym()
 
                 while (ch >= '0' && ch <= '9')
                     {
-                        //int_val = int_val*10 + (ch - '0');
-                        // increment the counter of elements
                         count++;
-                        //tant qu'il y a des chiffres on les rajoute au bignum
-                        // TODO faut voir comment le traiter maintenant quon a plus int_val
-                        bn_new_num(big_num, ch);
+                        bn_new_num(big_num,ch);
                         next_ch();
                     }
                 // verify special case 0
-                if (count == 1 && big_num->chiffres->chiffre == 0)
+                if (count == 1 && big_num->chiffres->chiffre == '0')
                     { // reset big num to NULL value which is 0
                         big_num = new_big_num();
                     }
@@ -483,8 +479,11 @@ void next_sym()
                     {
                         // TODO pas certain que l'assignation est necessaire
                         bn_verif_correc_zero(big_num);
+                        // verif cas 000
+                        if(bn_get_size(big_num)==1
+                           && big_num->chiffres->chiffre == '0')
+                            big_num = new_big_num();
                     }
-                //TODO maybe erase this comm : big_num->size = count; done in the add num
                 sym = INT;
 
             }
@@ -528,6 +527,9 @@ void next_sym()
                 sym = (i==0? EQUAL : EQUALS);
                 printf("%d\n", sym);
               }
+            //else if (ch == '<' || ch == '>'){
+                
+            //}
             else syntax_error();
         }
 }
@@ -650,6 +652,7 @@ node *test() /* <test> ::= <sum>|<sum>"<"<sum>*/
             }
         else if(sym == BIGGER)
             {
+                printf("BIGGER\n");
                 next_sym();
                 x = new_node(sym==EQUAL ? BEQ : BT);// ">=" | ">"
             }
@@ -961,6 +964,7 @@ int main()
                 if(globals[i]==0||globals[i]==1){
                     printf("%ld",globals[i]);
                 } else {
+                    //printf("bignum");
                     bn_print_right((BIG_NUM *)globals[i]);
                 }
             }
