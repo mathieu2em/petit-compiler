@@ -422,7 +422,12 @@ int bn_IFLEQ(BIG_NUM *a, BIG_NUM *b)
 }
 /* Analyseur lexical. */
 
-enum { DO_SYM, ELSE_SYM, IF_SYM, WHILE_SYM, BREAK_SYM, CONTINUE_SYM, PRINT_SYM, LBRA, RBRA, LPAR, RPAR, PLUS, MINUS, MULT, LESS, BIGGER, DIV, MOD, SEMI, EQUAL, EQUALS, INT, ID, EOI, NOT };
+enum { DO_SYM, ELSE_SYM, IF_SYM, WHILE_SYM, BREAK_SYM,
+       CONTINUE_SYM, PRINT_SYM, LBRA, RBRA, LPAR,
+       RPAR, PLUS, MINUS, MULT, LESS,
+       LESS_EQ, BIGGER, BIGGER_EQ, DIV, MOD,
+       SEMI, EQUAL, EQUALS, INT, ID,
+       EOI, NOT };
 
 char *words[] = { "do", "else", "if", "while", "break", "continue", "print", NULL };
 
@@ -450,8 +455,6 @@ void next_sym()
         case '*': sym = MULT;  next_ch(); break;
         case '/': sym = DIV;   next_ch(); break;
         case '%': sym = MOD;   next_ch(); break;
-        case '<': sym = LESS;  next_ch(); break;
-        case '>': sym = BIGGER;next_ch(); break;
         case ';': sym = SEMI;  next_ch(); break;
         case '!': sym = NOT;   next_ch(); break;
         case EOF: sym = EOI;   next_ch(); break;
@@ -525,12 +528,30 @@ void next_sym()
                     next_ch();
                   }
                 sym = (i==0? EQUAL : EQUALS);
-                printf("%d\n", sym);
+                //printf("%d\n", sym);
               }
-            //else if (ch == '<' || ch == '>'){
-                
-            //}
-            else syntax_error();
+            else if (ch == '<' || ch == '>'){
+                // 0 means < and 1 >
+                int temp = (ch=='<'? 0 : 1);
+                next_ch();
+                if(ch == '='){
+                    printf("BEQ OR LEQ?: ");
+                    if(temp==0){
+                        printf("LEQ\n");
+                        sym = LESS_EQ;
+                    } else {
+                        printf("BEQ\n");
+                        sym = BIGGER_EQ;
+                    }
+                } else {
+                    printf("LESS OR BIGGER\n");
+                    sym = (temp==0? LESS : BIGGER);
+                }
+            }
+            else {
+                printf("ELSE SYNTAX ERROR\n");
+                syntax_error();
+            }
         }
 }
 
@@ -572,12 +593,14 @@ node *term() /* <term> ::= <id> | <int> | <paren_expr> */
 
     if (sym == ID)           /* <term> ::= <id> */
         {
+            printf("ID\n");
             x = new_node(VAR);
             x->val = id_name[0]-'a';
             next_sym();
         }
     else if (sym == INT)     /* <term> ::= <int> */
         {
+            printf("INT\n");
             x = new_node(CST);
             x->bn = big_num;
             bn_print(x->bn);
@@ -603,7 +626,8 @@ node *mult()// <term>|<mult>"*"<term>|<mult>"/""10" |<mult>"%""10
         x->o2 = term();
         // has to be 10
         if(!(x->o2->kind==CST) || !(bn_verif_10(x->o2->bn))){
-          syntax_error();
+            printf("not 10\n");
+            syntax_error();
         }
       } else {
         x = new_node(MUL);
@@ -637,24 +661,35 @@ node *sum() /* <sum> ::= <mult>|<sum>"+"<mult>|<sum>"-"<mult>*/
 node *test() /* <test> ::= <sum>|<sum>"<"<sum>*/
 //TODO <sum>"<="<sum>|<sum>">"<sum>|<sum>">="<sum>|<sum>"=="<sum>|<sum>"!="<sum>
 {
-    printf("test\n");
+    printf("test %d\n", sym);
     node *x = sum();
-    if (sym == LESS   ||
-        sym == BIGGER ||
-        sym == EQUALS ||
+    if (sym == LESS      ||
+        sym == LESS_EQ   ||
+        sym == BIGGER_EQ ||
+        sym == BIGGER    ||
+        sym == EQUALS    ||
         sym == NOT){
 
         node *t = x;
         if (sym == LESS)
             {
+                x = new_node(LT);// "<=" | "<"
                 next_sym();
-                x = new_node(sym==EQUAL ? LEQ : LT);// "<=" | "<"
+            }
+        if (sym == LESS_EQ)
+            {
+                x = new_node(LEQ);
+                next_sym();
             }
         else if(sym == BIGGER)
             {
-                printf("BIGGER\n");
+                x = new_node(BT);// ">=" | ">"
                 next_sym();
-                x = new_node(sym==EQUAL ? BEQ : BT);// ">=" | ">"
+            }
+        else if(sym == BIGGER_EQ)
+            {
+                x = new_node(BEQ);
+                next_sym();
             }
         else if(sym == EQUALS)
             {// "=="
@@ -662,10 +697,13 @@ node *test() /* <test> ::= <sum>|<sum>"<"<sum>*/
             x = new_node(EQ);
             next_sym();
             }
-        else //(sym == NOT)
+        else if(sym == NOT)
             {
                 next_sym();
-                if(sym != EQUAL) syntax_error();
+                if(sym != EQUAL) {
+                    printf("NOT EQ!!\n");
+                    syntax_error();
+                }
                 x = new_node(NEQ); // "!= | syntax error
             }
         x->o1=t;
@@ -702,12 +740,19 @@ node *paren_expr() /* <paren_expr> ::= "(" <expr> ")" */
   printf("paren_expr\n");
     node *x;
 
-    if (sym == LPAR) next_sym(); else syntax_error();
+    if (sym == LPAR) next_sym();
+    else {
+        printf("PAREN EXPR SYN ERROR\n");
+        syntax_error();
+    }
 
     x = expr();
 
-    if (sym == RPAR) next_sym(); else syntax_error();
-
+    if (sym == RPAR) next_sym();
+    else {
+        printf("PAREN EXPR ERROR\n");
+        syntax_error();
+    }
     return x;
 }
 
@@ -782,7 +827,11 @@ node *statement()//TODO "print" <paren_expr>";"| "break"";"|"continue"";"
         {
             x = new_node(EXPR);
             x->o1 = expr();
-            if (sym == SEMI) next_sym(); else syntax_error();
+            if (sym == SEMI) next_sym();
+            else {
+                printf(" NOT SEMI\n");
+                syntax_error();
+            }
         }
 
     return x;
