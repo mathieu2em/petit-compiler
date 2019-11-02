@@ -776,6 +776,7 @@ node *statement()//TODO "print" <paren_expr>";"| "break"";"|"continue"";"
         }
     else if (sym == BREAK_SYM)
         {
+            printf("gimme a BREAK, BITCH!");
             x = new_node(BREAK);
             next_sym();
             if (sym == SEMI) next_sym(); else syntax_error();
@@ -862,6 +863,24 @@ enum { ILOAD, ISTORE, BIPUSH, DUP, POP, IADD, ISUB, IMULT, IDIV, IMOD,
 typedef long int code;
 
 code object[1000], *here = object;
+typedef struct boucle {code *entree,*sortie;} boucle;
+boucle boucles[10];
+int loop_deepness = 0;
+
+int breaks=0;
+int breaks_to_assign=0;
+code *break_adresses[500];
+
+
+void fix(code *src, code *dst) { *src = dst-src; } /* overflow? */
+
+void verify_breaks(code *point)
+{
+  while(breaks_to_assign > 0){
+    fix(break_adresses[breaks-breaks_to_assign], point);
+    breaks_to_assign--;
+  }
+}
 
 void gen(code c) { *here++ = c; } /* overflow? */ //rempli la pile de la MC
 
@@ -872,8 +891,6 @@ void gen(code c) { *here++ = c; } /* overflow? */ //rempli la pile de la MC
 #define g(c) gen(c)
 #define gi(c) gen(c)
 #endif
-
-void fix(code *src, code *dst) { *src = dst-src; } /* overflow? */
 
 void c(node *x) //Premiere etape, cree un array avec la liste des operations
 { switch (x->kind)
@@ -921,7 +938,8 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
                 c(x->o1);
                 gi(IFEQ); p2 = here++;
                 c(x->o2);
-                gi(GOTO); fix(here++,p1); fix(p2,here); break;
+                //decrementer boucle
+                gi(GOTO); fix(here++,p1);fix(p2,here); verify_breaks(here); break;
         }
 
         case DO    : { code *p1 = here; c(x->o1);
@@ -929,16 +947,16 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
                 gi(IFNE); fix(here++,p1); break;
         }
 
-        case BREAK : {
-          //gi(GOTO); fix(boucles[0].entree,here++);
+        case BREAK : { breaks_to_assign++;
+          gi(GOTO); break_adresses[breaks++] = here++;
           break;
         }
         case CONTINUE : {
-          
+
           break;
         }
         case EMPTY : break;
-          
+
         case SEQ   : c(x->o1);
             c(x->o2); break;
 
