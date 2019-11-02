@@ -778,11 +778,13 @@ node *statement()//TODO "print" <paren_expr>";"| "break"";"|"continue"";"
         {
             x = new_node(BREAK);
             next_sym();
+            if (sym == SEMI) next_sym(); else syntax_error();
         }
     else if (sym == CONTINUE_SYM)
         {
             x = new_node(CONTINUE);
             next_sym();
+            if (sym == SEMI) next_sym(); else syntax_error();
         }
     else if (sym == PRINT_SYM)
         {
@@ -927,8 +929,16 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
                 gi(IFNE); fix(here++,p1); break;
         }
 
+        case BREAK : {
+          //gi(GOTO); fix(boucles[0].entree,here++);
+          break;
+        }
+        case CONTINUE : {
+          
+          break;
+        }
         case EMPTY : break;
-
+          
         case SEQ   : c(x->o1);
             c(x->o2); break;
 
