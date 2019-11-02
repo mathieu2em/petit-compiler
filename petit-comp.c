@@ -250,10 +250,13 @@ BIG_NUM *bn_MOD(BIG_NUM *bn)
 // doesnt check sign nor if bn is illegal
 int bn_bigger(BIG_NUM *a, BIG_NUM *b)
 {
+    printf("bb0\n");
     int size_a = bn_get_size(a);
     int size_b = bn_get_size(b);
+    printf("bb1\n");
     if(size_a > size_b) return 1;
     else if(size_a < size_b) return 0;
+    else if(size_a==0) return 2;
     else {
         int i = size_a;
         int val_a = 0;
@@ -425,6 +428,15 @@ int bn_IFLEQ(BIG_NUM *a, BIG_NUM *b)
 {
     return !bn_IBT(a, b);
 }
+//fonction PRINT, elle doit soit utiliser bn_print_right, soit imprimer 0 ou 1
+void IPRINT(long int *addr){
+    if (*addr==0 || *addr==1){
+        printf("%ld\n", addr);
+        printf("%ld\n", *addr);
+    } else {
+        bn_print_right((BIG_NUM *)addr);
+    }
+}
 /* Analyseur lexical. */
 
 enum { DO_SYM, ELSE_SYM, IF_SYM, WHILE_SYM, BREAK_SYM,
@@ -459,7 +471,6 @@ void next_sym()
         case '/': sym = DIV;   next_ch(); break;
         case '%': sym = MOD;   next_ch(); break;
         case ';': sym = SEMI;  next_ch(); break;
-        case '!': sym = NOT;   next_ch(); break;
         case EOF: sym = EOI;   next_ch(); break;
         default:
             if (ch >= '0' && ch <= '9')
@@ -532,6 +543,15 @@ void next_sym()
                 } else {
                     printf("LESS OR BIGGER\n");
                     sym = (temp==0? LESS : BIGGER);
+                }
+            }
+            else if (ch == '!'){
+                next_ch();
+                if(ch == '='){
+                    sym = NOT;
+                    next_ch();
+                } else {
+                    syntax_error();
                 }
             } else if (ch == '=')
               {
@@ -704,12 +724,8 @@ node *test() /* <test> ::= <sum>|<sum>"<"<sum>*/
             }
         else if(sym == NOT)
             {
-                next_sym();
-                if(sym != EQUAL) {
-                    printf("NOT EQ!!\n");
-                    syntax_error();
-                }
                 x = new_node(NEQ); // "!= | syntax error
+                next_sym();
             }
         x->o1=t;
         x->o2=sum();
@@ -951,12 +967,13 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
         }
 
         case WHILE : { code *p1 = here, *p2;
-              //verify_continue(here);//TODO ne marche pas
               c(x->o1);
               gi(IFEQ); p2 = here++;
               c(x->o2);
               //decrementer boucle
-              gi(GOTO); verify_continues(p1), fix(here++,p1);fix(p2,here); verify_breaks(here); break;
+              gi(GOTO); fix(here++,p1); fix(p2,here);
+              verify_continues(p1);
+              verify_breaks(here); break;
         }
 
         case DO    : { code *p1 = here; c(x->o1);
@@ -1031,7 +1048,7 @@ void run()
                 --sp; break;
             case IFLEQ: sp[-2] = bn_IFLEQ((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
                 --sp; break;
-            case OUT  : printf("OUT");bn_print_right((BIG_NUM *)sp[-1]);break;//TODO enlever le out
+            case OUT  : IPRINT((code *)sp[-1]);break;
             case RETURN: return;
             }
 }
