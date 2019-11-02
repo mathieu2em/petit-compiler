@@ -459,7 +459,8 @@ void next_sym()
         case '!': sym = NOT;   next_ch(); break;
         case EOF: sym = EOI;   next_ch(); break;
         default:
-            if (ch >= '0' && ch <= '9'){
+            if (ch >= '0' && ch <= '9')
+                {
                 //int_val = 0; /* overflow? */
 
                 // on a un chiffre donc on initialise un bignum
@@ -489,7 +490,7 @@ void next_sym()
                     }
                 sym = INT;
 
-            }
+                }
             else if (ch >= 'a' && ch <= 'z')//TODO jai limpression que ca va pas chercher la var comme il faut jai limpression que ca va chercher un mot complet. faut arranger ca
                 {
                     int i = 0; /* overflow? */
@@ -511,7 +512,25 @@ void next_sym()
                             if (id_name[1] == '\0') sym = ID; else syntax_error();
                         }
                 }
-            else if (ch == '=')
+            else if (ch == '<' || ch == '>'){
+                // 0 means < and 1 >
+                int temp = (ch=='<'? 0 : 1);
+                next_ch();
+                if(ch == '='){
+                    printf("BEQ OR LEQ?: ");
+                    if(temp==0){
+                        printf("LEQ\n");
+                        sym = LESS_EQ;
+                    } else {
+                        printf("BEQ\n");
+                        sym = BIGGER_EQ;
+                    }
+                    next_ch();
+                } else {
+                    printf("LESS OR BIGGER\n");
+                    sym = (temp==0? LESS : BIGGER);
+                }
+            } else if (ch == '=')
               {
                   printf("we got an equal\n");
                 int i = 0;
@@ -530,24 +549,6 @@ void next_sym()
                 sym = (i==0? EQUAL : EQUALS);
                 //printf("%d\n", sym);
               }
-            else if (ch == '<' || ch == '>'){
-                // 0 means < and 1 >
-                int temp = (ch=='<'? 0 : 1);
-                next_ch();
-                if(ch == '='){
-                    printf("BEQ OR LEQ?: ");
-                    if(temp==0){
-                        printf("LEQ\n");
-                        sym = LESS_EQ;
-                    } else {
-                        printf("BEQ\n");
-                        sym = BIGGER_EQ;
-                    }
-                } else {
-                    printf("LESS OR BIGGER\n");
-                    sym = (temp==0? LESS : BIGGER);
-                }
-            }
             else {
                 printf("ELSE SYNTAX ERROR\n");
                 syntax_error();
