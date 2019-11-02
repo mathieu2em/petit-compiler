@@ -11,7 +11,7 @@
 /*---------------------------------------------------------------------------*/
 //exceptions
 void syntax_error() { fprintf(stderr, "syntax error\n"); exit(1); }
-void malloc_error() { fprintf(stderr, "memory error\n"); exit(1); }
+void malloc_error() { printf("memory error\n"); exit(1); }
 /* Grands entiers Structure */
 
 typedef struct grand_entier {
@@ -761,6 +761,8 @@ node *paren_expr() /* <paren_expr> ::= "(" <expr> ")" */
     return x;
 }
 
+int inLoop = 0;
+
 node *statement()//TODO "print" <paren_expr>";"| "break"";"|"continue"";"
 {
   printf("statement\n");
@@ -780,16 +782,25 @@ node *statement()//TODO "print" <paren_expr>";"| "break"";"|"continue"";"
         }
     else if (sym == BREAK_SYM)
         {
+          if(inLoop){
             printf("gimme a BREAK, BITCH!");
             x = new_node(BREAK);
             next_sym();
-            if (sym == SEMI) next_sym(); else syntax_error();
+          }else{
+            syntax_error();
+          }
+          if (sym == SEMI) next_sym(); else syntax_error();
         }
     else if (sym == CONTINUE_SYM)
         {
+          if(inLoop){
             x = new_node(CONTINUE);
             next_sym();
-            if (sym == SEMI) next_sym(); else syntax_error();
+          }else{
+            syntax_error();
+          }
+
+          if (sym == SEMI) next_sym(); else syntax_error();
         }
     else if (sym == PRINT_SYM)
         {
@@ -799,19 +810,23 @@ node *statement()//TODO "print" <paren_expr>";"| "break"";"|"continue"";"
         }
     else if (sym == WHILE_SYM) /* "while" <paren_expr> <stat> */
         {
-            x = new_node(WHILE);
-            next_sym();
-            x->o1 = paren_expr();
-            x->o2 = statement();
+          inLoop = 1;
+          x = new_node(WHILE);
+          next_sym();
+          x->o1 = paren_expr();
+          x->o2 = statement();
+          inLoop = 0;
         }
     else if (sym == DO_SYM)  /* "do" <stat> "while" <paren_expr> ";" */
         {
-            x = new_node(DO);
-            next_sym();
-            x->o1 = statement();
-            if (sym == WHILE_SYM) next_sym(); else syntax_error();
-            x->o2 = paren_expr();
-            if (sym == SEMI) next_sym(); else syntax_error();
+          inLoop = 1;
+          x = new_node(DO);
+          next_sym();
+          x->o1 = statement();
+          if (sym == WHILE_SYM) next_sym(); else syntax_error();
+          x->o2 = paren_expr();
+          if (sym == SEMI) next_sym(); else syntax_error();
+          inLoop = 0;
         }
     else if (sym == SEMI)    /* ";" */
         {
@@ -951,7 +966,6 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
         }
 
         case WHILE : { code *p1 = here, *p2;
-              //verify_continue(here);//TODO ne marche pas
               c(x->o1);
               gi(IFEQ); p2 = here++;
               c(x->o2);
