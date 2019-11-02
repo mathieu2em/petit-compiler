@@ -9,6 +9,9 @@
 #include "petit-comp.h" // TODO enlever a la remise
 
 /*---------------------------------------------------------------------------*/
+//exceptions
+void syntax_error() { fprintf(stderr, "syntax error\n"); exit(1); }
+void malloc_error() { fprintf(stderr, "memory error\n"); exit(1); }
 /* Grands entiers Structure */
 
 typedef struct grand_entier {
@@ -35,6 +38,7 @@ CELL *new_cell(char k, CELL *next)
 {
     //printf("new cell\n");
     CELL *cell = malloc(sizeof(CELL));
+    if(cell == NULL) malloc_error();
     cell->chiffre = k;
     cell->suivant = next;
     //printf("nc will ret\n");
@@ -105,6 +109,7 @@ BIG_NUM *bn_pop(BIG_NUM *bn)
 BIG_NUM *new_big_num()
 {
     BIG_NUM *bn = malloc(sizeof(BIG_NUM));
+    if(bn == NULL) malloc_error();
     bn->negatif = 0;
     bn->chiffres = NULL;
 
@@ -437,8 +442,6 @@ int sym;
 BIG_NUM *big_num;
 char id_name[100]; // 27?
 
-void syntax_error() { fprintf(stderr, "syntax error\n"); exit(1); }
-
 void next_ch() { ch = getchar(); }
 
 void next_sym()
@@ -582,6 +585,7 @@ node *new_node(int k)
 {
   printf("node\n");
     node *x = malloc(sizeof(node));
+    if(x == NULL) malloc_error();
     x->kind = k;
     return x;
 }
