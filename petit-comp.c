@@ -882,6 +882,18 @@ void verify_breaks(code *point)
   }
 }
 
+int continues=0;
+int continues_to_assign=0;
+code *continue_adresses[500];
+
+void verify_continue(code *point)
+{
+  while(continues_to_assign > 0){
+    fix(continue_adresses[continues-continues_to_assign], point);
+    continues_to_assign--;
+  }
+}
+
 void gen(code c) { *here++ = c; } /* overflow? */ //rempli la pile de la MC
 
 #ifdef SHOW_CODE
@@ -935,25 +947,29 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
         }
 
         case WHILE : { code *p1 = here, *p2;
-                c(x->o1);
-                gi(IFEQ); p2 = here++;
-                c(x->o2);
-                //decrementer boucle
-                gi(GOTO); fix(here++,p1);fix(p2,here); verify_breaks(here); break;
+              verify_continue(here);//TODO ne marche pas
+              c(x->o1);
+              gi(IFEQ); p2 = here++;
+              c(x->o2);
+              //decrementer boucle
+              gi(GOTO); fix(here++,p1);fix(p2,here); verify_breaks(here); break;
         }
 
         case DO    : { code *p1 = here; c(x->o1);
-                c(x->o2);
-                gi(IFNE); fix(here++,p1); break;
+              verify_continue(here);
+              c(x->o2);
+              gi(IFNE); fix(here++,p1);
+              verify_breaks(here);
+              break;
         }
 
         case BREAK : { breaks_to_assign++;
-          gi(GOTO); break_adresses[breaks++] = here++;
-          break;
+              gi(GOTO); break_adresses[breaks++] = here++;
+              break;
         }
-        case CONTINUE : {
-
-          break;
+        case CONTINUE : {continues_to_assign++;
+              gi(GOTO); continue_adresses[continues++] = here++;
+              break;
         }
         case EMPTY : break;
 
