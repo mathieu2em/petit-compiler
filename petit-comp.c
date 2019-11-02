@@ -890,7 +890,7 @@ int continues=0;
 int continues_to_assign=0;
 code *continue_adresses[500];
 
-void verify_continue(code *point)
+void verify_continues(code *point)
 {
   while(continues_to_assign > 0){
     fix(continue_adresses[continues-continues_to_assign], point);
@@ -956,14 +956,14 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
               gi(IFEQ); p2 = here++;
               c(x->o2);
               //decrementer boucle
-              gi(GOTO); fix(here++,p1);fix(p2,here); verify_breaks(here); break;
+              gi(GOTO); verify_continues(p1), fix(here++,p1);fix(p2,here); verify_breaks(here); break;
         }
 
         case DO    : { code *p1 = here; c(x->o1);
-              verify_continue(here);
               c(x->o2);
               gi(IFNE); fix(here++,p1);
               verify_breaks(here);
+              verify_continues(p1);
               break;
         }
 
