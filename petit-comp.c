@@ -858,7 +858,7 @@ node *program()  /* <program> ::= <stat> */
 /* Generateur de code. */
 
 enum { ILOAD, ISTORE, BIPUSH, DUP, POP, IADD, ISUB, IMULT, IDIV, IMOD,
-       GOTO, IEQ, INEQ, IBT, IBEQ, IFEQ, IFNE, IFLT, IFLEQ, RETURN };
+       GOTO, IEQ, INEQ, IBT, IBEQ, IFEQ, IFNE, IFLT, IFLEQ, OUT, RETURN };
 
 typedef long int code;
 
@@ -947,7 +947,7 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
         }
 
         case WHILE : { code *p1 = here, *p2;
-              verify_continue(here);//TODO ne marche pas
+              //verify_continue(here);//TODO ne marche pas
               c(x->o1);
               gi(IFEQ); p2 = here++;
               c(x->o2);
@@ -971,6 +971,7 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
               gi(GOTO); continue_adresses[continues++] = here++;
               break;
         }
+        case PRINT : c(x->o1); gi(OUT); break;
         case EMPTY : break;
 
         case SEQ   : c(x->o1);
@@ -1026,6 +1027,7 @@ void run()
                 --sp; break;
             case IFLEQ: sp[-2] = bn_IFLEQ((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
                 --sp; break;
+            case OUT  : printf("OUT");bn_print_right((BIG_NUM *)sp[-1]);break;//TODO enlever le out
             case RETURN: return;
             }
 }
@@ -1051,7 +1053,7 @@ int main()
     printf("bfr run\n");
     run(); //Fait les operations etapes par etapes selon la pile cree dans c(programs())
 
-    for (i=0; i<26; i++)//TODO doit enlever eventuellement
+    /*for (i=0; i<26; i++)//TODO doit enlever eventuellement
         if (globals[i] != 0)
             {
                 printf("%c = ", 'a'+i);
@@ -1062,6 +1064,7 @@ int main()
                     bn_print_right((BIG_NUM *)globals[i]);
                 }
             }
+    */
     return 0;
 }
 
