@@ -15,9 +15,9 @@ void malloc_error() { printf("memory error\n"); exit(1); }
 /* Grands entiers Structure */
 
 typedef struct grand_entier {
-  //int size; // number of elements in the bn
-  int negatif;
-  struct cellule *chiffres;
+    int refs;
+    int negatif;
+    struct cellule *chiffres;
 } BIG_NUM;
 
 typedef struct cellule {
@@ -110,6 +110,7 @@ BIG_NUM *new_big_num()
 {
     BIG_NUM *bn = malloc(sizeof(BIG_NUM));
     if(bn == NULL) malloc_error();
+    bn->refs = 0;
     bn->negatif = 0;
     bn->chiffres = NULL;
 
@@ -428,12 +429,39 @@ int bn_IFLEQ(BIG_NUM *a, BIG_NUM *b)
 {
     return !bn_IBT(a, b);
 }
+// free all cells of a big num
+void cell_free_rec(CELL *c)
+{
+    if(c!=NULL){
+        cell_free_rec(c->suivant);
+        free(c);
+    }
+}
+void bn_free(BIG_NUM *bn)
+{
+    cell_free_rec(bn->chiffres);
+    free(bn);
+}
+// increment the number of pointers to a bn by one
+void bn_increment(BIG_NUM *bn)
+{
+    bn->refs = (bn->refs)+1;
+}
+//decrement the bn refs by one , if becomes 0 then free
+void bn_decrement(BIG_NUM *bn)
+{
+    bn->refs = (bn->refs)-1;
+    if(bn->refs==0){
+        bn_free(bn);
+    }
+}
 //fonction PRINT, elle doit soit utiliser bn_print_right, soit imprimer 0 ou 1
 void IPRINT(long int *addr){
     if (*addr==0 || *addr==1){
-        printf("%ld\n", addr);
-        printf("%ld\n", *addr);
+        printf("%d\n", addr);
+        printf("%d\n", *addr);
     } else {
+        printf("Big num printing ");
         bn_print_right((BIG_NUM *)addr);
     }
 }
@@ -1036,7 +1064,9 @@ void run()
         switch (*pc++)
             {
             case ILOAD : *sp++ = globals[*pc++];             break;
-            case ISTORE: globals[*pc++] = *--sp;             break;
+            case ISTORE:
+                printf("AAAAAH %d\n", globals[*pc]);
+                globals[*pc++] = *--sp;             break;
             case BIPUSH: *sp++ = *pc++;                      break;
             case DUP   : sp++; sp[-1] = sp[-2];              break;
             case POP   : --sp;                               break;
@@ -1063,7 +1093,7 @@ void run()
                 --sp; break;
             case IFLEQ: sp[-2] = bn_IFLEQ((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
                 --sp; break;
-            case OUT  : IPRINT((code *)sp[-1]);break;
+            case OUT  : bn_print_right((BIG_NUM *)sp[-1]);break;
             case RETURN: return;
             }
 }
