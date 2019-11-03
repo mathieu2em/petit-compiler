@@ -63,8 +63,15 @@ CELL *bn_last_cell(BIG_NUM *bn)
 }
 int bn_get_size(BIG_NUM *bn)
 {
+    //TODO a verifier pourquoi cest necessaire
+    if(bn==NULL){
+        printf("bn is null\n");
+        return 0;
+    }
     int count = 0;
+    //printf("bgs... ");//TODO test
     CELL *c = bn->chiffres;
+    //printf("ok\n");
     while(c!=NULL){
         count++;
         c = c->suivant;
@@ -88,6 +95,7 @@ CELL *bn_get_cell(BIG_NUM *bn, int i)
 // pop the last non-NULL cell of a big num1
 BIG_NUM *bn_pop(BIG_NUM *bn)
 {
+    printf("bn_pop\n");
     if(bn_get_size(bn)==0){
         return bn;
     }
@@ -223,7 +231,7 @@ BIG_NUM *bn_DIV(BIG_NUM *bn)
     BIG_NUM *result = new_big_num();
     if(bn_get_size(bn)==0){
         printf("ERROR ZERO DIVISION");
-        return 0;
+        return result;
     }
     if(bn_get_size(bn)==1){
         return result;
@@ -251,20 +259,27 @@ BIG_NUM *bn_MOD(BIG_NUM *bn)
 // doesnt check sign nor if bn is illegal
 int bn_bigger(BIG_NUM *a, BIG_NUM *b)
 {
-    printf("bb0\n");
+    printf("bn_bigger?\n");
+    //printf("bb0\n");
+    printf("gsa\n");
     int size_a = bn_get_size(a);
+    printf("gsb\n");
     int size_b = bn_get_size(b);
-    printf("bb1\n");
+    
+
+    bn_print_right(a);
+    bn_print_right(b);
     if(size_a > size_b) return 1;
     else if(size_a < size_b) return 0;
-    else if(size_a==0) return 2;
+    else if(size_a==0) return 2; // both sizes are nulls
     else {
+        //printf("bb2 ");
         int i = size_a;
         int val_a = 0;
         int val_b = 0;
         while(i-- > 0){
-            val_a = char_to_int(bn_get_cell(a, i)->chiffre);
-            val_b = char_to_int(bn_get_cell(b, i)->chiffre);
+            if(size_a!=0) val_a = char_to_int(bn_get_cell(a, i)->chiffre);
+            if(size_b!=0) val_b = char_to_int(bn_get_cell(b, i)->chiffre);
             if(val_a > val_b) return 1;
             else if(val_b > val_a) return 0;
         }
@@ -344,6 +359,7 @@ BIG_NUM *bn_int_mult(int a, BIG_NUM *b)
     bn_new_num_reverse(bn, int_to_char(result));
     c = c->suivant;
   }
+  if(retenue!=0) bn_new_num_reverse(bn, int_to_char(retenue));
   return bn;
 }
 // multiply two big nums
@@ -354,9 +370,15 @@ BIG_NUM *bn_mult(BIG_NUM *a, BIG_NUM *b)
   BIG_NUM *flusher;
 
   BIG_NUM *temp_bn = bn_int_mult(char_to_int(c->chiffre), b);// first big num
+  //printf("bn_mult:\n");
+  //bn_print_right(a);
+  //printf(" X ");
+  //bn_print_right(b);
+  //printf("= ");
   c = c->suivant; // go get next int
   while(c!=NULL){
     BIG_NUM *temp_bn2 = bn_int_mult(char_to_int(c->chiffre), b);
+    //bn_print_right(temp_bn2);
     int i=0;
     while(i<count){
       bn_new_num(temp_bn2, '0');
@@ -368,6 +390,7 @@ BIG_NUM *bn_mult(BIG_NUM *a, BIG_NUM *b)
     free(flusher);
     c = c->suivant;
   }
+  //bn_print_right(temp_bn);//TODO test
   return temp_bn;
 }
 // verifies if big num == 10
@@ -410,8 +433,9 @@ int bn_INEQ(BIG_NUM *a, BIG_NUM *b)
 // returns a big num containing 1 or 0 depending on result
 int bn_IBT(BIG_NUM *a, BIG_NUM *b)
 {
-    if(bn_bigger(a,b)==1) return 1;
-    return 0;
+    //if(bn_bigger(a,b)==1) return 1;
+    //return 0;
+    return bn_bigger(a,b);
 }
 // returns big num 1 if a>=b else big num 0
 int bn_IBEQ(BIG_NUM *a, BIG_NUM *b)
@@ -453,7 +477,7 @@ void bn_decrement(BIG_NUM *bn)
 {
     bn->refs = (bn->refs)-1;
     if(bn->refs==0){
-        printf("no refs left , bn_free called\n");
+        //printf("no refs left , bn_free called\n");
         bn_free(bn);
     }
 }
@@ -658,7 +682,7 @@ node *term() /* <term> ::= <id> | <int> | <paren_expr> */
             printf("INT\n");
             x = new_node(CST);
             x->bn = big_num;
-            bn_print(x->bn);
+            //bn_print(x->bn);
             next_sym();
         }
     else                     /* <term> ::= <paren_expr> */
@@ -807,7 +831,7 @@ node *paren_expr() /* <paren_expr> ::= "(" <expr> ")" */
     return x;
 }
 
-int inLoop = 0;
+int d_loop = 0;
 
 node *statement()//TODO "print" <paren_expr>";"| "break"";"|"continue"";"
 {
@@ -828,9 +852,9 @@ node *statement()//TODO "print" <paren_expr>";"| "break"";"|"continue"";"
         }
     else if (sym == BREAK_SYM)
         {
-          if(inLoop){
-            printf("gimme a BREAK, BITCH!");
+          if(d_loop){
             x = new_node(BREAK);
+            x->val = d_loop;
             next_sym();
           }else{
             syntax_error();
@@ -839,14 +863,15 @@ node *statement()//TODO "print" <paren_expr>";"| "break"";"|"continue"";"
         }
     else if (sym == CONTINUE_SYM)
         {
-          if(inLoop){
-            x = new_node(CONTINUE);
-            next_sym();
-          }else{
-            syntax_error();
-          }
+            if(d_loop){
+                x = new_node(CONTINUE);
+                x->val = d_loop;
+                next_sym();
+            }else{
+                syntax_error();
+            }
 
-          if (sym == SEMI) next_sym(); else syntax_error();
+            if (sym == SEMI) next_sym(); else syntax_error();
         }
     else if (sym == PRINT_SYM)
         {
@@ -856,23 +881,25 @@ node *statement()//TODO "print" <paren_expr>";"| "break"";"|"continue"";"
         }
     else if (sym == WHILE_SYM) /* "while" <paren_expr> <stat> */
         {
-          inLoop = 1;
+          d_loop = d_loop +1;
           x = new_node(WHILE);
           next_sym();
           x->o1 = paren_expr();
           x->o2 = statement();
-          inLoop = 0;
+          x->val = d_loop;
+          d_loop = d_loop - 1;
         }
     else if (sym == DO_SYM)  /* "do" <stat> "while" <paren_expr> ";" */
         {
-          inLoop = 1;
+          d_loop = d_loop + 1;
           x = new_node(DO);
           next_sym();
+          x->val = d_loop;
           x->o1 = statement();
           if (sym == WHILE_SYM) next_sym(); else syntax_error();
           x->o2 = paren_expr();
           if (sym == SEMI) next_sym(); else syntax_error();
-          inLoop = 0;
+          d_loop = d_loop - 1;
         }
     else if (sym == SEMI)    /* ";" */
         {
@@ -932,31 +959,48 @@ typedef struct boucle {code *entree,*sortie;} boucle;
 boucle boucles[10];
 int loop_deepness = 0;
 
-int breaks=0;
-int breaks_to_assign=0;
-code *break_adresses[500];
-
-
 void fix(code *src, code *dst) { *src = dst-src; } /* overflow? */
 
-void verify_breaks(code *point)
-{
-  while(breaks_to_assign > 0){
-    fix(break_adresses[breaks-breaks_to_assign], point);
-    breaks_to_assign--;
-  }
-}
+int breaks=0;
+code *breaks_addr[500];
+int breaks_dps[500];
 
 int continues=0;
-int continues_to_assign=0;
-code *continue_adresses[500];
+code *continues_addr[500];
+int continues_dps[500];
 
-void verify_continues(code *point)
+void set_break(code *addr, int deep) {
+    printf("set_break\n");
+    breaks_addr[breaks] = addr;
+    breaks_dps[breaks] = deep;
+    breaks++;
+    printf("break set\n");
+}
+void set_continue(code *addr, int deep) {
+    printf("set cont\n");
+    continues_addr[continues] = addr;
+    continues_dps[continues] = deep;
+    continues++;
+    printf("cont set\n");
+}
+void verify_breaks(int deepness, code *point)
 {
-  while(continues_to_assign > 0){
-    fix(continue_adresses[continues-continues_to_assign], point);
-    continues_to_assign--;
+    int i = 0;
+  while(i < breaks){
+      if( breaks_dps[i] == deepness ){
+          fix( breaks_addr[i], point);
+      }
+      i++;
   }
+}
+void verify_continues(int deepness, code *point)
+{
+    int i = 0;
+    while(i < continues){
+        if(continues_dps[i] == deepness)
+            fix(continues_addr[i], point);
+        i++;
+    }
 }
 
 void gen(code c) { *here++ = c; } /* overflow? */ //rempli la pile de la MC
@@ -1017,24 +1061,25 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
               c(x->o2);
               //decrementer boucle
               gi(GOTO); fix(here++,p1); fix(p2,here);
-              verify_continues(p1);
-              verify_breaks(here); break;
+              verify_continues(x->val, p1);
+              verify_breaks(x->val, here);
+               break; //here
         }
 
         case DO    : { code *p1 = here; c(x->o1);
               c(x->o2);
               gi(IFNE); fix(here++,p1);
-              verify_breaks(here);
-              verify_continues(p1);
+              verify_breaks(x->val, here);
+              verify_continues(x->val, p1);
               break;
         }
 
-        case BREAK : { breaks_to_assign++;
-              gi(GOTO); break_adresses[breaks++] = here++;
+        case BREAK : {
+            gi(GOTO); set_break(here++, x->val);//a_breaks[breaks++]->addr = here++;
               break;
         }
-        case CONTINUE : {continues_to_assign++;
-              gi(GOTO); continue_adresses[continues++] = here++;
+        case CONTINUE : {
+            gi(GOTO); set_continue(here++, x->val);//a_continues[continues++]->addr = here++;
               break;
         }
         case PRINT : c(x->o1); gi(OUT); break;
@@ -1071,12 +1116,12 @@ void run()
                 //bn_print_right(*--sp);
                 bn_increment(*--sp);
                 if(globals[*pc]!=0 && globals[*pc]!=1){
-                    printf("bn decrement bn : "); //TODO TEST
-                    bn_print_right(globals[*pc]); //TODO TEST
+                    //printf("bn decrement bn : "); //TODO TEST
+                    //bn_print_right(globals[*pc]); //TODO TEST
                     bn_decrement(globals[*pc]);
                  }
-                printf("print bn : ");
-                bn_print_right(*sp);
+                //printf("print bn : ");
+                //bn_print_right(*sp);
                 globals[*pc++] = *sp;/* *--sp avant*/        break;
             case BIPUSH: *sp++ = *pc++;                      break;
             case DUP   : sp++; sp[-1] = sp[-2];              break;
@@ -1116,10 +1161,10 @@ void run()
 int main()
 {
     int i;
-    printf("test0\n");
+    //printf("test0\n");
 
     c(program());//Cree la liste des operations
-    printf("test1\n");
+    //printf("test1\n");
 
 #ifdef SHOW_CODE
     printf("\n");
@@ -1127,11 +1172,11 @@ int main()
 
     for (i=0; i<26; i++) // Initie la liste des variables globales
         globals[i] = 0;
-    printf("bfr run\n");
+    //printf("bfr run\n");
     run(); //Fait les operations etapes par etapes selon la pile cree dans c(programs())
-
-    /*for (i=0; i<26; i++)//TODO doit enlever eventuellement
-        if (0)//globals[i] != 0)
+    /*
+    for (i=0; i<26; i++)//TODO doit enlever eventuellement
+        if (globals[i] != 0)
             {
                 printf("%c (%d) = ", 'a'+i, i);
                 if(globals[i]==0||globals[i]==1){
@@ -1141,7 +1186,7 @@ int main()
                     bn_print_right((BIG_NUM *)globals[i]);
                 }
             }
-    */
+   */
     return 0;
 }
 
