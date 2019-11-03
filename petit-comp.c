@@ -18,11 +18,15 @@ node *HEAD;
 //exceptions
 void syntax_error() {
   fprintf(stderr, "syntax error\n");
-  if(HEAD!=NULL){
-    recursive_free_tree(HEAD);
-  }
-  exit(1); }
-void malloc_error() { printf("memory error\n"); exit(1); }
+  recursive_free_tree(HEAD);
+  exit(1);
+}
+
+void malloc_error() {
+  printf("memory error\n");
+  recursive_free_tree(HEAD);
+  exit(1);
+}
 
 /* Grands entiers Structure */
 typedef struct grand_entier {
