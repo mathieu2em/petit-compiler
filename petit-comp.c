@@ -9,11 +9,13 @@
 #include "petit-comp.h" // TODO enlever a la remise
 
 /*---------------------------------------------------------------------------*/
+//typedef struct node node;
+// head of ASA
+//node *HEAD;
 //exceptions
 void syntax_error() { fprintf(stderr, "syntax error\n"); exit(1); }
 void malloc_error() { printf("memory error\n"); exit(1); }
 /* Grands entiers Structure */
-
 typedef struct grand_entier {
     int refs;
     int negatif;
@@ -340,11 +342,7 @@ BIG_NUM *bn_mult(BIG_NUM *a, BIG_NUM *b)
   BIG_NUM *flusher;
 
   BIG_NUM *temp_bn = bn_int_mult(char_to_int(c->chiffre), b);// first big num
-  //printf("bn_mult:\n");
-  //bn_print_right(a);
-  //printf(" X ");
-  //bn_print_right(b);
-  //printf("= ");
+
   c = c->suivant; // go get next int
   while(c!=NULL){
     BIG_NUM *temp_bn2 = bn_int_mult(char_to_int(c->chiffre), b);
@@ -360,7 +358,6 @@ BIG_NUM *bn_mult(BIG_NUM *a, BIG_NUM *b)
     free(flusher);
     c = c->suivant;
   }
-  //bn_print_right(temp_bn);//TODO test
   return temp_bn;
 }
 // verifies if big num == 10
@@ -1114,6 +1111,29 @@ void run()
             }
 }
 
+void recursive_free_tree(node *head)
+{
+    if(head!=NULL){
+        recursive_free_tree(head->o1);
+        recursive_free_tree(head->o2);
+        recursive_free_tree(head->o3);
+        free(head);
+    }
+}
+void free_everything(node *head)
+{
+    // free tree
+    recursive_free_tree(head);
+
+    // free remaining big nums
+    int i;
+    for (i=0; i<26; i++){
+        if (globals[i] != 0 && globals[i]!=1)
+            {
+                bn_free((BIG_NUM *)globals[i]);
+            }
+    }
+}
 /*---------------------------------------------------------------------------*/
 
 /* Programme principal. */
@@ -1121,10 +1141,9 @@ void run()
 int main()
 {
     int i;
-    //printf("test0\n");
+    node *prog = program();
 
-    c(program());//Cree la liste des operations
-    //printf("test1\n");
+    c(prog);//Cree la liste des operations
 
 #ifdef SHOW_CODE
     printf("\n");
@@ -1134,19 +1153,11 @@ int main()
         globals[i] = 0;
     //printf("bfr run\n");
     run(); //Fait les operations etapes par etapes selon la pile cree dans c(programs())
-    /*
-    for (i=0; i<26; i++)//TODO doit enlever eventuellement
-        if (globals[i] != 0)
-            {
-                printf("%c (%d) = ", 'a'+i, i);
-                if(globals[i]==0||globals[i]==1){
-                    printf("%ld",globals[i]);
-                } else {
-                    //printf("bignum");
-                    bn_print_right((BIG_NUM *)globals[i]);
-                }
-            }
-   */
+
+    printf("free time! ... ");
+    free_everything(prog);
+    printf("freed :D !\n");
+
     return 0;
 }
 
