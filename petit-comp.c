@@ -445,6 +445,7 @@ void bn_free(BIG_NUM *bn)
 // increment the number of pointers to a bn by one
 void bn_increment(BIG_NUM *bn)
 {
+    //bn_print_right(bn); TODO TEST
     bn->refs = (bn->refs)+1;
 }
 //decrement the bn refs by one , if becomes 0 then free
@@ -452,6 +453,7 @@ void bn_decrement(BIG_NUM *bn)
 {
     bn->refs = (bn->refs)-1;
     if(bn->refs==0){
+        printf("no refs left , bn_free called\n");
         bn_free(bn);
     }
 }
@@ -992,7 +994,7 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
         case BEQ   : printf("BEQ\n");c(x->o1); c(x->o2); gi(IBEQ); break;
 
         case ASSIGN: c(x->o2);
-            gi(DUP);
+            gi(DUP);// duplique le pointeur vers le nouveau big num
             gi(ISTORE); g(x->o1->val); break;
 
         case IF1   : { code *p1;
@@ -1065,8 +1067,17 @@ void run()
             {
             case ILOAD : *sp++ = globals[*pc++];             break;
             case ISTORE:
-                printf("AAAAAH %d\n", globals[*pc]);
-                globals[*pc++] = *--sp;             break;
+                //printf("AAAAAH %d\n", globals[*pc]);
+                //bn_print_right(*--sp);
+                bn_increment(*--sp);
+                if(globals[*pc]!=0 && globals[*pc]!=1){
+                    printf("bn decrement bn : "); //TODO TEST
+                    bn_print_right(globals[*pc]); //TODO TEST
+                    bn_decrement(globals[*pc]);
+                 }
+                printf("print bn : ");
+                bn_print_right(*sp);
+                globals[*pc++] = *sp;/* *--sp avant*/        break;
             case BIPUSH: *sp++ = *pc++;                      break;
             case DUP   : sp++; sp[-1] = sp[-2];              break;
             case POP   : --sp;                               break;
@@ -1120,9 +1131,9 @@ int main()
     run(); //Fait les operations etapes par etapes selon la pile cree dans c(programs())
 
     /*for (i=0; i<26; i++)//TODO doit enlever eventuellement
-        if (globals[i] != 0)
+        if (0)//globals[i] != 0)
             {
-                printf("%c = ", 'a'+i);
+                printf("%c (%d) = ", 'a'+i, i);
                 if(globals[i]==0||globals[i]==1){
                     printf("%ld",globals[i]);
                 } else {
