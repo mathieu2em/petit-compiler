@@ -25,32 +25,29 @@ typedef struct cellule {
     struct cellule *suivant;
 } CELL;
 
-// function to transform char to int
+// char from '0' to '9' to ints int equivalent
 int char_to_int(char c)
 {
     return c - '0';
 }
+// int from 0 to 9 to ints char equivalent
 char int_to_char(int c)
 {
     return c + '0';
 }
 CELL *new_cell(char k, CELL *next)
 {
-    //printf("new cell\n");
     CELL *cell = malloc(sizeof(CELL));
     if(cell == NULL) malloc_error();
     cell->chiffre = k;
     cell->suivant = next;
-    //printf("nc will ret\n");
     return cell;
 }
 // returns a pointer to last non-NULL cell of a big num
 CELL *bn_last_cell(BIG_NUM *bn)
 {
-    //printf("testt\n");
     CELL *cell = bn->chiffres;
     if(cell == NULL){
-        //printf("we have a prob\n");
         return bn->chiffres;
     }
     else if(cell->suivant==NULL) return cell;
@@ -61,29 +58,25 @@ CELL *bn_last_cell(BIG_NUM *bn)
         return cell;
     }
 }
+// returns number of cells contained in a big num
 int bn_get_size(BIG_NUM *bn)
 {
-    //TODO a verifier pourquoi cest necessaire
     if(bn==NULL){
-        printf("bn is null\n");
         return 0;
     }
     int count = 0;
-    //printf("bgs... ");//TODO test
     CELL *c = bn->chiffres;
-    //printf("ok\n");
     while(c!=NULL){
         count++;
         c = c->suivant;
     }
     return count;
 }
-// method returns a pointer to cell at position i
+// returns a pointer to cell at position i
 CELL *bn_get_cell(BIG_NUM *bn, int i)
 {
     if(bn_get_size(bn) <= i){
-        printf("ERROR bn_get_cell");
-        return 0;
+        exit(1);
     }
     int count = 0;
     CELL *c = bn->chiffres;
@@ -92,10 +85,9 @@ CELL *bn_get_cell(BIG_NUM *bn, int i)
     }
     return c;
 }
-// pop the last non-NULL cell of a big num1
+// pop the last non-NULL cell of a big num
 BIG_NUM *bn_pop(BIG_NUM *bn)
 {
-    printf("bn_pop\n");
     if(bn_get_size(bn)==0){
         return bn;
     }
@@ -112,8 +104,7 @@ BIG_NUM *bn_pop(BIG_NUM *bn)
     return bn;
 }
 
-// on veut une fonction qui initialise un nouveau bignum dans la memoire.
-// il l'initialise avec aucun caractere a l'interieur.
+// create a new big num in memory
 BIG_NUM *new_big_num()
 {
     BIG_NUM *bn = malloc(sizeof(BIG_NUM));
@@ -124,7 +115,7 @@ BIG_NUM *new_big_num()
 
     return bn;
 }
-// rajoute un caractere a un bignum existant
+// adds a num character to existing big num
 BIG_NUM *bn_new_num(BIG_NUM *bn, char k)
 {
     CELL *cell = new_cell(k, bn->chiffres);
@@ -132,7 +123,7 @@ BIG_NUM *bn_new_num(BIG_NUM *bn, char k)
 
     return bn;
 }
-// verify if big_num has zeros at the start and if so
+// verify if big_num has zeros at the start and if so pop them
 BIG_NUM *bn_verif_correc_zero(BIG_NUM *bn)
 {
     while (bn_last_cell(bn)->chiffre=='0')
@@ -141,18 +132,13 @@ BIG_NUM *bn_verif_correc_zero(BIG_NUM *bn)
         }
     return bn;
 }
-// rajoute un caractere de facon inversee a un big num
+// add a character to end of big num chained list of cells
 BIG_NUM *bn_new_num_reverse(BIG_NUM *bn, char k)
 {
-    //printf("test43\n");
     CELL *cell = bn_last_cell(bn);
-    //printf("test44\n");
-    if(cell==NULL){
-        bn->chiffres = new_cell(k, NULL);
-    } else {
-        cell->suivant = new_cell(k, NULL);
-    }
-    //printf("test45\n");
+
+    if(cell==NULL) bn->chiffres = new_cell(k, NULL);
+    else cell->suivant = new_cell(k, NULL);
     return bn;
 }
 // prints the big num in the order of the chained list
@@ -170,19 +156,17 @@ void bn_print(BIG_NUM *bn)
     }
     printf("\n");
 }
-// print the big num in the order of human reading sens
+// print the big num in the order of human reading
+// ( from end of chained list to start )
 void bn_print_right(BIG_NUM *bn)
 {
     if(bn->negatif==1) printf("-");
     if(bn_get_size(bn)==0) printf("0");
     else {
-        //printf("t1\n");
         int i = bn_get_size(bn);
         CELL *c = bn_get_cell(bn, --i);
-        //printf("t2\n");
         while(i>=0)
             {
-                //printf("t3\n");
                 printf("%c", c->chiffre);
                 c = bn_get_cell(bn, --i);
             }
@@ -192,21 +176,15 @@ void bn_print_right(BIG_NUM *bn)
 // adds two big nums
 BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
 {
-    //printf("bn_IADD\n");
     int restant = 0; // store le restant pour prochain calcul
     int temp_result = 0; // store the temporary add result
     CELL *ca = a->chiffres; // chiffre 1
     CELL *cb = b->chiffres; // chiffre 2
     BIG_NUM *result = new_big_num();
-    //printf("cc1\n");
-    //printf("%d %d",a,b);
-    //bn_print(a);
     while(ca!=NULL || cb!=NULL)
         {
-            //printf("cc2 %d %d %d\n", ((ca==NULL)?0:char_to_int(ca->chiffre)), ((cb==NULL)?0:char_to_int(cb->chiffre)), restant);
             temp_result = ((ca==NULL)?0:char_to_int(ca->chiffre))
                 + ((cb==NULL)?0:char_to_int(cb->chiffre)) + restant;
-            //printf("%d\n", temp_result);
             // verify if result is bigger than 10
             if (temp_result>=10){
                 restant = temp_result/10;
@@ -259,21 +237,13 @@ BIG_NUM *bn_MOD(BIG_NUM *bn)
 // doesnt check sign nor if bn is illegal
 int bn_bigger(BIG_NUM *a, BIG_NUM *b)
 {
-    printf("bn_bigger?\n");
-    //printf("bb0\n");
-    printf("gsa\n");
     int size_a = bn_get_size(a);
-    printf("gsb\n");
     int size_b = bn_get_size(b);
-    
 
-    bn_print_right(a);
-    bn_print_right(b);
     if(size_a > size_b) return 1;
     else if(size_a < size_b) return 0;
     else if(size_a==0) return 2; // both sizes are nulls
     else {
-        //printf("bb2 ");
         int i = size_a;
         int val_a = 0;
         int val_b = 0;
@@ -657,7 +627,6 @@ typedef struct node node;
 
 node *new_node(int k)
 {
-  printf("node\n");
     node *x = malloc(sizeof(node));
     if(x == NULL) malloc_error();
     x->kind = k;
@@ -672,17 +641,14 @@ node *term() /* <term> ::= <id> | <int> | <paren_expr> */
 
     if (sym == ID)           /* <term> ::= <id> */
         {
-            printf("ID\n");
             x = new_node(VAR);
             x->val = id_name[0]-'a';
             next_sym();
         }
     else if (sym == INT)     /* <term> ::= <int> */
         {
-            printf("INT\n");
             x = new_node(CST);
             x->bn = big_num;
-            //bn_print(x->bn);
             next_sym();
         }
     else                     /* <term> ::= <paren_expr> */
@@ -693,7 +659,6 @@ node *term() /* <term> ::= <id> | <int> | <paren_expr> */
 
 node *mult()// <term>|<mult>"*"<term>|<mult>"/""10" |<mult>"%""10
 {
-  printf("mult\n");
   node *x = term();
   while (sym==MULT || sym==DIV || sym==MOD)
     {
@@ -961,44 +926,45 @@ int loop_deepness = 0;
 
 void fix(code *src, code *dst) { *src = dst-src; } /* overflow? */
 
+typedef struct bc {
+    code *addr;
+    int dp;
+    int assigned;
+}bc;
+
+bc *new_bc(code *addr,int dp){
+    bc *bc = malloc(sizeof(bc));
+    bc->addr = addr;
+    bc->dp = dp;
+    bc->assigned = 0;
+    return bc;
+}
+
 int breaks=0;
-code *breaks_addr[500];
-int breaks_dps[500];
+bc *breaks_tab[500];
 
 int continues=0;
-code *continues_addr[500];
-int continues_dps[500];
+bc *continues_tab[500];
 
 void set_break(code *addr, int deep) {
     printf("set_break\n");
-    breaks_addr[breaks] = addr;
-    breaks_dps[breaks] = deep;
-    breaks++;
+    breaks_tab[breaks++] = new_bc(addr,deep);
     printf("break set\n");
 }
 void set_continue(code *addr, int deep) {
     printf("set cont\n");
-    continues_addr[continues] = addr;
-    continues_dps[continues] = deep;
-    continues++;
+    continues_tab[continues++] = new_bc(addr,deep);
     printf("cont set\n");
 }
-void verify_breaks(int deepness, code *point)
+
+void verify_bc(bc *tab[],int pos, int dp, code *pt)
 {
     int i = 0;
-  while(i < breaks){
-      if( breaks_dps[i] == deepness ){
-          fix( breaks_addr[i], point);
-      }
-      i++;
-  }
-}
-void verify_continues(int deepness, code *point)
-{
-    int i = 0;
-    while(i < continues){
-        if(continues_dps[i] == deepness)
-            fix(continues_addr[i], point);
+    while(i < pos){
+        if(tab[i]->dp == dp && tab[i]->assigned == 0){
+            fix(tab[i]->addr,pt);
+            tab[i]->assigned = 1;
+        }
         i++;
     }
 }
@@ -1061,16 +1027,16 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
               c(x->o2);
               //decrementer boucle
               gi(GOTO); fix(here++,p1); fix(p2,here);
-              verify_continues(x->val, p1);
-              verify_breaks(x->val, here);
+              verify_bc(continues_tab, continues, x->val, p1);
+              verify_bc(breaks_tab, breaks, x->val, here);
                break; //here
         }
 
         case DO    : { code *p1 = here; c(x->o1);
               c(x->o2);
               gi(IFNE); fix(here++,p1);
-              verify_breaks(x->val, here);
-              verify_continues(x->val, p1);
+              verify_bc(continues_tab, continues, x->val, p1);
+              verify_bc(breaks_tab, breaks, x->val, here);
               break;
         }
 
@@ -1112,16 +1078,10 @@ void run()
             {
             case ILOAD : *sp++ = globals[*pc++];             break;
             case ISTORE:
-                //printf("AAAAAH %d\n", globals[*pc]);
-                //bn_print_right(*--sp);
                 bn_increment(*--sp);
                 if(globals[*pc]!=0 && globals[*pc]!=1){
-                    //printf("bn decrement bn : "); //TODO TEST
-                    //bn_print_right(globals[*pc]); //TODO TEST
                     bn_decrement(globals[*pc]);
                  }
-                //printf("print bn : ");
-                //bn_print_right(*sp);
                 globals[*pc++] = *sp;/* *--sp avant*/        break;
             case BIPUSH: *sp++ = *pc++;                      break;
             case DUP   : sp++; sp[-1] = sp[-2];              break;
