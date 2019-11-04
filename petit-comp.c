@@ -33,14 +33,15 @@ typedef struct grand_entier {
   int refs;
   int negatif;
   struct cellule *chiffres;
-} BIG_NUM;
+} BIG_NUM; // TODO minuscules plz
 
 typedef struct cellule {
   char chiffre;
   struct cellule *suivant;
-} CELL;
+} CELL; // TODO minuscules , les maj sont pour define et macros
 
 // char from '0' to '9' to ints int equivalent
+
 int char_to_int(char c)
 {
   return c - '0';
@@ -216,11 +217,11 @@ BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
   return result;
 }
 // divide big_num result by 10
+// TODO 
 BIG_NUM *bn_DIV(BIG_NUM *bn)
 {
   BIG_NUM *result = new_big_num();
   if(bn_get_size(bn)==0){
-    printf("ERROR ZERO DIVISION");
     return result;
   }
   if(bn_get_size(bn)==1){
@@ -407,6 +408,7 @@ int bn_INEQ(BIG_NUM *a, BIG_NUM *b)
   return 0;
 }
 // returns a big num containing 1 or 0 depending on result
+// TODO quelquechose de bizarre
 int bn_IBT(BIG_NUM *a, BIG_NUM *b)
 {
   //if(bn_bigger(a,b)==1) return 1;
@@ -414,12 +416,14 @@ int bn_IBT(BIG_NUM *a, BIG_NUM *b)
   return bn_bigger(a,b);
 }
 // returns big num 1 if a>=b else big num 0
+// TODO fait un truc cave lol
 int bn_IBEQ(BIG_NUM *a, BIG_NUM *b)
 {
   if(bn_bigger(a,b)) return 1;
   return 0;
 }
 // returns bn 1 if a<b else bn 0
+// TODO plein de fonctions pour rien
 int bn_IFLT(BIG_NUM *a, BIG_NUM *b)
 {
   return !bn_IBEQ(a,b);
@@ -443,12 +447,14 @@ void bn_free(BIG_NUM *bn)
   free(bn);
 }
 // increment the number of pointers to a bn by one
+// TODO abdel n'est pas con lol
 void bn_increment(BIG_NUM *bn)
 {
   //bn_print_right(bn); TODO TEST
-  bn->refs = (bn->refs)+1;
+  bn->refs++;
 }
 //decrement the bn refs by one , if becomes 0 then free
+// TODO --
 void bn_decrement(BIG_NUM *bn)
 {
   bn->refs = (bn->refs)-1;
@@ -603,7 +609,7 @@ struct node
     int val;
     BIG_NUM *bn;
   };
-  int kind;
+  char kind; //TODO un char cest un byte tser uint8-t
   struct node *o1;
   struct node *o2;
   struct node *o3;
@@ -894,6 +900,7 @@ enum { ILOAD, ISTORE, BIPUSH, DUP, POP, IADD, ISUB, IMULT, IDIV, IMOD,
 
 typedef long int code;
 
+// TODO verifier
 code object[1000], *here = object;
 typedef struct boucle {code *entree,*sortie;} boucle;
 boucle boucles[10];
@@ -914,7 +921,7 @@ bc *new_bc(code *addr,int dp){
   bc->assigned = 0;
   return bc;
 }
-
+// TODO y aller avec une liste chainee
 int breaks=0;
 bc *breaks_tab[500];
 
@@ -966,7 +973,7 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
 
     case MUL   : c(x->o1); c(x->o2); gi(IMULT); break;
 
-    case LT    : c(x->o1); c(x->o2); gi(IFLT);  break;
+    case LT    : c(x->o1); c(x->o2); gi(IFLT);  break;// todo a justifier dans le rapport et ecrire pourquoi avec avantages et inconvenients
     case LEQ   : c(x->o1); c(x->o2); gi(IFLEQ); break;
 
     case EQ    : c(x->o1); c(x->o2); gi(IEQ); break;
@@ -1041,7 +1048,7 @@ long int globals[26];
 
 void run()
 {
-  long int stack[1000], *sp = stack; /* overflow? */ //pile
+  long int stack[1000], *sp = stack; /* overflow? */ //TODO 
   code *pc = object;
 
   for (;;)
@@ -1101,7 +1108,7 @@ void free_everything(node *head)
   // free remaining big nums
   int i;
   for (i=0; i<26; i++){
-    if (globals[i] != 0 && globals[i]!=1)
+    if (globals[i] != 0 && globals[i] != 1)
       {
         bn_free((BIG_NUM *)globals[i]);
       }
