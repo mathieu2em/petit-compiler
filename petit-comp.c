@@ -33,12 +33,12 @@ typedef struct grand_entier {
   int refs;
   int negatif;
   struct cellule *chiffres;
-} BIG_NUM; // TODO minuscules plz
+} big_num;
 
 typedef struct cellule {
   char chiffre;
   struct cellule *suivant;
-} CELL; // TODO minuscules , les maj sont pour define et macros
+} cell; // TODO minuscules , les maj sont pour define et macros
 
 // char from '0' to '9' to ints int equivalent
 
@@ -51,37 +51,37 @@ char int_to_char(int c)
 {
   return c + '0';
 }
-CELL *new_cell(char k, CELL *next)
+cell *new_cell(char k, cell *next)
 {
-  CELL *cell = malloc(sizeof(CELL));
-  if(cell == NULL) malloc_error();
-  cell->chiffre = k;
-  cell->suivant = next;
-  return cell;
+  cell *cell_temp = malloc(sizeof(cell));
+  if(cell_temp == NULL) malloc_error();
+  cell_temp->chiffre = k;
+  cell_temp->suivant = next;
+  return cell_temp;
 }
 // returns a pointer to last non-NULL cell of a big num
-CELL *bn_last_cell(BIG_NUM *bn)
+cell *bn_last_cell(big_num *bn)
 {
-  CELL *cell = bn->chiffres;
-  if(cell == NULL){
+  cell *cell_temp = bn->chiffres;
+  if(cell_temp == NULL){
     return bn->chiffres;
   }
-  else if(cell->suivant==NULL) return cell;
+  else if(cell_temp->suivant==NULL) return cell_temp;
   else {
-    while(cell->suivant != NULL){
-      cell = cell->suivant;
+    while(cell_temp->suivant != NULL){
+      cell_temp = cell_temp->suivant;
     }
-    return cell;
+    return cell_temp;
   }
 }
 // returns number of cells contained in a big num
-int bn_get_size(BIG_NUM *bn)
+int bn_get_size(big_num *bn)
 {
   if(bn==NULL){
     return 0;
   }
   int count = 0;
-  CELL *c = bn->chiffres;
+  cell *c = bn->chiffres;
   while(c!=NULL){
     count++;
     c = c->suivant;
@@ -89,41 +89,41 @@ int bn_get_size(BIG_NUM *bn)
   return count;
 }
 // returns a pointer to cell at position i
-CELL *bn_get_cell(BIG_NUM *bn, int i)
+cell *bn_get_cell(big_num *bn, int i)
 {
   if(bn_get_size(bn) <= i){
     exit(1);
   }
   int count = 0;
-  CELL *c = bn->chiffres;
+  cell *c = bn->chiffres;
   while((count++)<i){
     c = c->suivant;
   }
   return c;
 }
 // pop the last non-NULL cell of a big num
-BIG_NUM *bn_pop(BIG_NUM *bn)
+big_num *bn_pop(big_num *bn)
 {
   if(bn_get_size(bn)==0){
     return bn;
   }
-  CELL *cell = bn->chiffres;
-  if(cell->suivant==NULL){
+  cell *cell_temp = bn->chiffres;
+  if(cell_temp->suivant==NULL){
     bn->chiffres = NULL;
   } else {
-    while(cell->suivant->suivant != NULL){
-      cell = cell->suivant;
+    while(cell_temp->suivant->suivant != NULL){
+      cell_temp = cell_temp->suivant;
     }
-    cell->suivant = NULL;
-    free(cell->suivant);
+    cell_temp->suivant = NULL;
+    free(cell_temp->suivant);
   }
   return bn;
 }
 
 // create a new big num in memory
-BIG_NUM *new_big_num()
+big_num *new_big_num()
 {
-  BIG_NUM *bn = malloc(sizeof(BIG_NUM));
+  big_num *bn = malloc(sizeof(big_num));
   if(bn == NULL) malloc_error();
   bn->refs = 0;
   bn->negatif = 0;
@@ -132,15 +132,15 @@ BIG_NUM *new_big_num()
   return bn;
 }
 // adds a num character to existing big num
-BIG_NUM *bn_new_num(BIG_NUM *bn, char k)
+big_num *bn_new_num(big_num *bn, char k)
 {
-  CELL *cell = new_cell(k, bn->chiffres);
-  bn->chiffres = cell;
+  cell *cell_temp = new_cell(k, bn->chiffres);
+  bn->chiffres = cell_temp;
 
   return bn;
 }
 // verify if big_num has zeros at the start and if so pop them
-BIG_NUM *bn_verif_correc_zero(BIG_NUM *bn)
+big_num *bn_verif_correc_zero(big_num *bn)
 {
   while (bn_last_cell(bn)->chiffre=='0')
     {
@@ -149,21 +149,21 @@ BIG_NUM *bn_verif_correc_zero(BIG_NUM *bn)
   return bn;
 }
 // add a character to end of big num chained list of cells
-BIG_NUM *bn_new_num_reverse(BIG_NUM *bn, char k)
+big_num *bn_new_num_reverse(big_num *bn, char k)
 {
-  CELL *cell = bn_last_cell(bn);
+  cell *cell_temp = bn_last_cell(bn);
 
-  if(cell==NULL) bn->chiffres = new_cell(k, NULL);
-  else cell->suivant = new_cell(k, NULL);
+  if(cell_temp==NULL) bn->chiffres = new_cell(k, NULL);
+  else cell_temp->suivant = new_cell(k, NULL);
   return bn;
 }
 // prints the big num in the order of the chained list
-void bn_print(BIG_NUM *bn)
+void bn_print(big_num *bn)
 {
   if(bn->negatif==1) printf("-");
   if(bn_get_size(bn)==0) printf("0");
   else {
-    CELL *c = bn->chiffres;
+    cell *c = bn->chiffres;
     while(c!=NULL)
       {
         printf("%c", c->chiffre);
@@ -174,13 +174,13 @@ void bn_print(BIG_NUM *bn)
 }
 // print the big num in the order of human reading
 // ( from end of chained list to start )
-void bn_print_right(BIG_NUM *bn)
+void bn_print_right(big_num *bn)
 {
   if(bn->negatif==1) printf("-");
   if(bn_get_size(bn)==0) printf("0");
   else {
     int i = bn_get_size(bn);
-    CELL *c = bn_get_cell(bn, --i);
+    cell *c = bn_get_cell(bn, --i);
     while(i>=0)
       {
         printf("%c", c->chiffre);
@@ -190,13 +190,13 @@ void bn_print_right(BIG_NUM *bn)
   printf("\n");
 }
 // adds two big nums
-BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
+big_num *bn_IADD(big_num *a, big_num *b)
 {
   int restant = 0; // store le restant pour prochain calcul
   int temp_result = 0; // store the temporary add result
-  CELL *ca = a->chiffres; // chiffre 1
-  CELL *cb = b->chiffres; // chiffre 2
-  BIG_NUM *result = new_big_num();
+  cell *ca = a->chiffres; // chiffre 1
+  cell *cb = b->chiffres; // chiffre 2
+  big_num *result = new_big_num();
   while(ca!=NULL || cb!=NULL)
     {
       temp_result = ((ca==NULL)?0:char_to_int(ca->chiffre))
@@ -218,16 +218,16 @@ BIG_NUM *bn_IADD(BIG_NUM *a, BIG_NUM *b)
 }
 // divide big_num result by 10
 // TODO 
-BIG_NUM *bn_DIV(BIG_NUM *bn)
+big_num *bn_DIV(big_num *bn)
 {
-  BIG_NUM *result = new_big_num();
+  big_num *result = new_big_num();
   if(bn_get_size(bn)==0){
     return result;
   }
   if(bn_get_size(bn)==1){
     return result;
   } else {
-    CELL *c = bn->chiffres->suivant;
+    cell *c = bn->chiffres->suivant;
     while(c != NULL){
       bn_new_num_reverse(result, c->chiffre);
       c = c->suivant;
@@ -236,19 +236,19 @@ BIG_NUM *bn_DIV(BIG_NUM *bn)
   return result;
 }
 // bignum modulo 10
-BIG_NUM *bn_MOD(BIG_NUM *bn)
+big_num *bn_MOD(big_num *bn)
 {
   if(bn_get_size(bn)==0){ // si la taille est 1 on retourne le chiffre
     return new_big_num();
   }
-  BIG_NUM *result = new_big_num();
+  big_num *result = new_big_num();
   return bn_new_num(result, bn->chiffres->chiffre);
 }
 // 1 if a>b
 // 2 if a==b
 // 0 of a,b
 // doesnt check sign nor if bn is illegal
-int bn_bigger(BIG_NUM *a, BIG_NUM *b)
+int bn_bigger(big_num *a, big_num *b)
 {
   int size_a = bn_get_size(a);
   int size_b = bn_get_size(b);
@@ -270,15 +270,15 @@ int bn_bigger(BIG_NUM *a, BIG_NUM *b)
   }
 }
 // substract a - b
-BIG_NUM *bn_ISUBB(BIG_NUM *a, BIG_NUM *b)
+big_num *bn_ISUBB(big_num *a, big_num *b)
 {
   int temp_result = 0; // store the temporary add result
   int retenue = 0;// pour indiquer la retenue
   int reverse = 0;// pour indiquer s'il y a une retenue
 
-  CELL *ca = a->chiffres; // unite de a
-  CELL *cb = b->chiffres; // unite de b
-  BIG_NUM *result = new_big_num();
+  cell *ca = a->chiffres; // unite de a
+  cell *cb = b->chiffres; // unite de b
+  big_num *result = new_big_num();
 
   // compare les 2 nombres.
   // si a==b, status == 2
@@ -289,7 +289,7 @@ BIG_NUM *bn_ISUBB(BIG_NUM *a, BIG_NUM *b)
   if(status == 2){// a == b => a-a=0
     return result;
   }else if(status == 0){ // a<b, on calcule b-a au lieu de a-b
-    CELL *temp = ca;
+    cell *temp = ca;
     ca = cb;
     cb = temp;
     reverse = 1;
@@ -321,14 +321,14 @@ BIG_NUM *bn_ISUBB(BIG_NUM *a, BIG_NUM *b)
   return result;
 }
 // multiply a big num by an int
-BIG_NUM *bn_int_mult(int a, BIG_NUM *b)
+big_num *bn_int_mult(int a, big_num *b)
 {
-  CELL *c = b->chiffres;
+  cell *c = b->chiffres;
 
   int result;
   int retenue = 0;
 
-  BIG_NUM *bn = new_big_num();
+  big_num *bn = new_big_num();
 
   while(c!=NULL){
     int temp_result = a*char_to_int(c->chiffre)+retenue;
@@ -346,17 +346,17 @@ BIG_NUM *bn_int_mult(int a, BIG_NUM *b)
   return bn;
 }
 // multiply two big nums
-BIG_NUM *bn_mult(BIG_NUM *a, BIG_NUM *b)
+big_num *bn_mult(big_num *a, big_num *b)
 {
-  CELL *c = a->chiffres;
+  cell *c = a->chiffres;
   int count = 1; // numbers of zero to add
-  BIG_NUM *flusher;
+  big_num *flusher;
 
-  BIG_NUM *temp_bn = bn_int_mult(char_to_int(c->chiffre), b);// first big num
+  big_num *temp_bn = bn_int_mult(char_to_int(c->chiffre), b);// first big num
 
   c = c->suivant; // go get next int
   while(c!=NULL){
-    BIG_NUM *temp_bn2 = bn_int_mult(char_to_int(c->chiffre), b);
+    big_num *temp_bn2 = bn_int_mult(char_to_int(c->chiffre), b);
     //bn_print_right(temp_bn2);
     int i=0;
     while(i<count){
@@ -373,9 +373,9 @@ BIG_NUM *bn_mult(BIG_NUM *a, BIG_NUM *b)
 }
 // verifies if big num == 10
 // if so returns true
-int bn_verif_10(BIG_NUM *bn)
+int bn_verif_10(big_num *bn)
 {
-  CELL *c = bn->chiffres;
+  cell *c = bn->chiffres;
   if(c == NULL
      || c->chiffre!='0'
      || c->suivant == NULL
@@ -386,22 +386,22 @@ int bn_verif_10(BIG_NUM *bn)
     return 1;
   }
 }
-// returns a BIG_NUM containing 0 or 1 // TODO verifier si on en a encore besoin
-BIG_NUM *bn_bool(int n)
+// returns a big_num containing 0 or 1 // TODO verifier si on en a encore besoin
+big_num *bn_bool(int n)
 {
-  BIG_NUM *bn = new_big_num();
+  big_num *bn = new_big_num();
   if(n>0) bn_new_num(bn, '1');
   return bn;
 }
 // returns 1 if big nums are equals
-int bn_IEQ(BIG_NUM *a, BIG_NUM *b)
+int bn_IEQ(big_num *a, big_num *b)
 {
   int result = bn_bigger(a, b);
   if(result == 2) return 1;
   return 0;
 }
 // !bn_IEQ
-int bn_INEQ(BIG_NUM *a, BIG_NUM *b)
+int bn_INEQ(big_num *a, big_num *b)
 {
   int result = bn_bigger(a, b);
   if(result != 2) return 1;
@@ -409,7 +409,7 @@ int bn_INEQ(BIG_NUM *a, BIG_NUM *b)
 }
 // returns a big num containing 1 or 0 depending on result
 // TODO quelquechose de bizarre
-int bn_IBT(BIG_NUM *a, BIG_NUM *b)
+int bn_IBT(big_num *a, big_num *b)
 {
   //if(bn_bigger(a,b)==1) return 1;
   //return 0;
@@ -417,45 +417,44 @@ int bn_IBT(BIG_NUM *a, BIG_NUM *b)
 }
 // returns big num 1 if a>=b else big num 0
 // TODO fait un truc cave lol
-int bn_IBEQ(BIG_NUM *a, BIG_NUM *b)
+int bn_IBEQ(big_num *a, big_num *b)
 {
   if(bn_bigger(a,b)) return 1;
   return 0;
 }
 // returns bn 1 if a<b else bn 0
 // TODO plein de fonctions pour rien
-int bn_IFLT(BIG_NUM *a, BIG_NUM *b)
+int bn_IFLT(big_num *a, big_num *b)
 {
   return !bn_IBEQ(a,b);
 }
 // bn 1 if a<=b else bn 0
-int bn_IFLEQ(BIG_NUM *a, BIG_NUM *b)
+int bn_IFLEQ(big_num *a, big_num *b)
 {
   return !bn_IBT(a, b);
 }
 // free all cells of a big num
-void cell_free_rec(CELL *c)
+void cell_free_rec(cell *c)
 {
   if(c!=NULL){
     cell_free_rec(c->suivant);
     free(c);
   }
 }
-void bn_free(BIG_NUM *bn)
+void bn_free(big_num *bn)
 {
   cell_free_rec(bn->chiffres);
   free(bn);
 }
 // increment the number of pointers to a bn by one
 // TODO abdel n'est pas con lol
-void bn_increment(BIG_NUM *bn)
+void bn_increment(big_num *bn)
 {
-  //bn_print_right(bn); TODO TEST
   bn->refs++;
 }
 //decrement the bn refs by one , if becomes 0 then free
 // TODO --
-void bn_decrement(BIG_NUM *bn)
+void bn_decrement(big_num *bn)
 {
   bn->refs = (bn->refs)-1;
   if(bn->refs==0){
@@ -476,7 +475,7 @@ char *words[] = { "do", "else", "if", "while", "break", "continue", "print", NUL
 int ch = ' ';
 int sym;
 //int int_val;
-BIG_NUM *big_num;
+big_num *big_num_temp;
 char id_name[100]; // 27?
 
 void next_ch() { ch = getchar(); }
@@ -500,31 +499,31 @@ void next_sym()
       if (ch >= '0' && ch <= '9')
         {
           //int_val = 0; /* overflow? */
-          big_num = new_big_num();
+          big_num_temp = new_big_num();
 
           int count = 0;
 
           while (ch >= '0' && ch <= '9')
             {
               count++;
-              bn_new_num(big_num,ch);
+              bn_new_num(big_num_temp,ch);
               next_ch();
             }
           // verify special case 0
-          if (count == 1 && big_num->chiffres->chiffre == '0')
+          if (count == 1 && big_num_temp->chiffres->chiffre == '0')
             {
-              bn_free(big_num);
+              bn_free(big_num_temp);
               // reset big num to NULL value which is 0
-              big_num = new_big_num();
+              big_num_temp = new_big_num();
             }
           else
             {
-              bn_verif_correc_zero(big_num);
+              bn_verif_correc_zero(big_num_temp);
               // verif cas 000
-              if(bn_get_size(big_num)==1
-                 && big_num->chiffres->chiffre == '0'){
-                bn_free(big_num);
-                big_num = new_big_num();
+              if(bn_get_size(big_num_temp)==1
+                 && big_num_temp->chiffres->chiffre == '0'){
+                bn_free(big_num_temp);
+                big_num_temp = new_big_num();
               }
             }
           sym = INT;
@@ -607,9 +606,9 @@ struct node
   union
   {
     int val;
-    BIG_NUM *bn;
+    big_num *bn;
   };
-  char kind; //TODO un char cest un byte tser uint8-t
+  char kind;
   struct node *o1;
   struct node *o2;
   struct node *o3;
@@ -640,7 +639,7 @@ node *term() /* <term> ::= <id> | <int> | <paren_expr> */
   else if (sym == INT)     /* <term> ::= <int> */
     {
       x = new_node(CST);
-      x->bn = big_num;
+      x->bn = big_num_temp;
       next_sym();
     }
   else                     /* <term> ::= <paren_expr> */
@@ -692,8 +691,9 @@ node *sum() /* <sum> ::= <mult>|<sum>"+"<mult>|<sum>"-"<mult>*/
 }
 
 
-node *test() /* <test> ::= <sum>|<sum>"<"<sum>*/
-//TODO <sum>"<="<sum>|<sum>">"<sum>|<sum>">="<sum>|<sum>"=="<sum>|<sum>"!="<sum>
+node *test() /* <test> ::= <sum>|<sum>"<"<sum>|<sum>"<="<sum>|
+                                 <sum>">"<sum>|<sum>">="<sum>|
+                                 <sum>"=="<sum>|<sum>"!="<sum>*/
 {
   node *x = sum();
   if (sym == LESS      ||
@@ -783,7 +783,7 @@ node *paren_expr() /* <paren_expr> ::= "(" <expr> ")" */
 
 int d_loop = 0;
 
-node *statement()//TODO "print" <paren_expr>";"| "break"";"|"continue"";"
+node *statement()/*"print" <paren_expr>";"| "break"";"|"continue"";"*/
 {
   node *x;
 
@@ -1056,38 +1056,38 @@ void run()
       {
       case ILOAD : *sp++ = globals[*pc++];             break;
       case ISTORE:
-        bn_increment((BIG_NUM *)*--sp);
+        bn_increment((big_num *)*--sp);
         if(globals[*pc]!=0 && globals[*pc]!=1){
-          bn_decrement((BIG_NUM *)globals[*pc]);
+          bn_decrement((big_num *)globals[*pc]);
         }
         globals[*pc++] = *sp;                          break;
       case BIPUSH: *sp++ = *pc++;                      break;
       case DUP   : sp++; sp[-1] = sp[-2];              break;
       case POP   : --sp;                               break;
-      case IADD  : sp[-2] = (code)bn_IADD((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
+      case IADD  : sp[-2] = (code)bn_IADD((big_num *)sp[-2],(big_num *)sp[-1]);
         --sp;  break;
-      case ISUB  : sp[-2] = (code)bn_ISUBB((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
+      case ISUB  : sp[-2] = (code)bn_ISUBB((big_num *)sp[-2],(big_num *)sp[-1]);
         --sp; break;
-      case IMULT : sp[-2] = (code)bn_mult((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
+      case IMULT : sp[-2] = (code)bn_mult((big_num *)sp[-2],(big_num *)sp[-1]);
         --sp; break;
-      case IDIV  : sp[-2] = (code)bn_DIV((BIG_NUM *)sp[-2]); --sp; break;
-      case IMOD  : sp[-2] = (code)bn_MOD((BIG_NUM *)sp[-2]); --sp; break;
-      case IEQ   : sp[-2] = bn_IEQ((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
+      case IDIV  : sp[-2] = (code)bn_DIV((big_num *)sp[-2]); --sp; break;
+      case IMOD  : sp[-2] = (code)bn_MOD((big_num *)sp[-2]); --sp; break;
+      case IEQ   : sp[-2] = bn_IEQ((big_num *)sp[-2],(big_num *)sp[-1]);
         --sp; break;
-      case INEQ  : sp[-2] = bn_INEQ((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
+      case INEQ  : sp[-2] = bn_INEQ((big_num *)sp[-2],(big_num *)sp[-1]);
         --sp; break;
-      case IBT   : sp[-2] = bn_IBT((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
+      case IBT   : sp[-2] = bn_IBT((big_num *)sp[-2],(big_num *)sp[-1]);
         --sp; break;
-      case IBEQ  : sp[-2] = bn_IBEQ((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
+      case IBEQ  : sp[-2] = bn_IBEQ((big_num *)sp[-2],(big_num *)sp[-1]);
         --sp; break;
       case GOTO  : pc += *pc;                          break;
       case IFEQ  : if (*--sp==0) pc += *pc; else pc++; break;
       case IFNE  : if (*--sp!=0) pc += *pc; else pc++; break;
-      case IFLT  : sp[-2] = bn_IFLT((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
+      case IFLT  : sp[-2] = bn_IFLT((big_num *)sp[-2],(big_num *)sp[-1]);
         --sp; break;
-      case IFLEQ: sp[-2] = bn_IFLEQ((BIG_NUM *)sp[-2],(BIG_NUM *)sp[-1]);
+      case IFLEQ: sp[-2] = bn_IFLEQ((big_num *)sp[-2],(big_num *)sp[-1]);
         --sp; break;
-      case OUT  : bn_print_right((BIG_NUM *)sp[-1]);break;
+      case OUT  : bn_print_right((big_num *)sp[-1]);break;
       case RETURN: return;
       }
 }
@@ -1110,7 +1110,7 @@ void free_everything(node *head)
   for (i=0; i<26; i++){
     if (globals[i] != 0 && globals[i] != 1)
       {
-        bn_free((BIG_NUM *)globals[i]);
+        bn_free((big_num *)globals[i]);
       }
   }
 }
