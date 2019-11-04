@@ -28,6 +28,11 @@ void malloc_error() {
   exit(1);
 }
 
+void size_error(){
+  printf("over size limit\n");
+  recursive_free_tree(HEAD);
+  exit(1);
+}
 /* Grands entiers Structure */
 typedef struct grand_entier {
   int refs;
@@ -1048,10 +1053,13 @@ long int globals[26];
 
 void run()
 {
-  long int stack[1000], *sp = stack; /* overflow? */ //TODO 
+  long int stack[1000], *sp = stack; /* overflow? */ //TODO
   code *pc = object;
-
-  for (;;)
+  int index = 0;
+  for (;;){
+    if(index++ >= 1000) size_error();//Teste pour eviter de depacer le stack
+    
+    //printf("%i \n",index++);TODO test
     switch (*pc++)
       {
       case ILOAD : *sp++ = globals[*pc++];             break;
@@ -1090,6 +1098,7 @@ void run()
       case OUT  : bn_print_right((big_num *)sp[-1]);break;
       case RETURN: return;
       }
+  }
 }
 
 void recursive_free_tree(node *head)
