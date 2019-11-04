@@ -953,7 +953,6 @@ void verify_bc(bc *tab[],int pos, int dp, code *pt)
 }
 
 void gen(code c) { *here++ = c; } /* overflow? */ //rempli la pile de la MC
-
 #ifdef SHOW_CODE
 #define g(c) do { printf(" %ld",(code)c); gen(c); } while (0)
 #define gi(c) do { printf("%s\n", #c); gen(c); } while (0)
@@ -962,8 +961,16 @@ void gen(code c) { *here++ = c; } /* overflow? */ //rempli la pile de la MC
 #define gi(c) gen(c)
 #endif
 
+int index_c = 0;
+
 void c(node *x) //Premiere etape, cree un array avec la liste des operations
-{ switch (x->kind)
+{
+  if(index_c++ > 1000){
+    printf("atteint limite de noeuds \n");
+    size_error();
+  }
+
+  switch (x->kind)
     { case VAR   : gi(ILOAD); g(x->val); break;
 
     case CST   : gi(BIPUSH); g((code)x->bn); break;
@@ -1055,11 +1062,12 @@ void run()
 {
   long int stack[1000], *sp = stack; /* overflow? */ //TODO
   code *pc = object;
-  int index = 0;
+  int index_stack = 0;
   for (;;){
-    if(index++ >= 1000) size_error();//Teste pour eviter de depacer le stack
-    
-    //printf("%i \n",index++);TODO test
+    if(index_stack++ >= 1000){
+      printf("atteint limite stack \n");
+      size_error();//Teste pour eviter de depacer le stack
+    }
     switch (*pc++)
       {
       case ILOAD : *sp++ = globals[*pc++];             break;
