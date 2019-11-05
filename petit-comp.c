@@ -466,6 +466,7 @@ void bn_decrement(big_num *bn)
     bn_free(bn);
   }
 }
+
 /* Analyseur lexical. */
 
 enum { DO_SYM, ELSE_SYM, IF_SYM, WHILE_SYM, BREAK_SYM,
@@ -1066,6 +1067,7 @@ void run()
   code *sp_check = sp+1000;
 
   for (;;){
+
     switch (*pc++)
       {
       case ILOAD : *sp++ = globals[*pc++]; checksp(sp,sp_check); break;

@@ -1,4 +1,5 @@
 {
+<<<<<<< Updated upstream
   a = 2;
   b = 2;
   c = 2;
@@ -27,4 +28,8 @@
 
   a=a+b+c+d+e+f+g+h+i+j;
 
+=======
+  a=b=1;
+  print(b);
+>>>>>>> Stashed changes
 }
