@@ -416,16 +416,13 @@ int bn_INEQ(big_num *a, big_num *b)
 // TODO quelquechose de bizarre
 int bn_IBT(big_num *a, big_num *b)
 {
-  //if(bn_bigger(a,b)==1) return 1;
-  //return 0;
-  return bn_bigger(a,b);
+  if(bn_bigger(a,b)==1) return 1;
+  return 0;
 }
 // returns big num 1 if a>=b else big num 0
-// TODO fait un truc cave lol
 int bn_IBEQ(big_num *a, big_num *b)
 {
-  if(bn_bigger(a,b)) return 1;
-  return 0;
+  return bn_bigger(a, b);
 }
 // returns bn 1 if a<b else bn 0
 // TODO plein de fonctions pour rien
@@ -905,54 +902,71 @@ enum { ILOAD, ISTORE, BIPUSH, DUP, POP, IADD, ISUB, IMULT, IDIV, IMOD,
 
 typedef long int code;
 
-// TODO verifier
-code object[1000], *here = object;
-typedef struct boucle {code *entree,*sortie;} boucle;
-boucle boucles[10];
-int loop_deepness = 0;
-
-void fix(code *src, code *dst) { *src = dst-src; } /* overflow? */
-
 typedef struct bc {
   code *addr;
   int dp;
   int assigned;
+  struct bc *next;
 }bc;
 
+code object[1000], *here = object;
+bc *breaks_head = NULL;
+bc *continues_head = NULL;
+
+void fix(code *src, code *dst) { *src = dst-src; } /* overflow? */
+
+// creates a new node of the bc linked list ( reversed stack )
 bc *new_bc(code *addr,int dp){
   bc *bc = malloc(sizeof(bc));
   bc->addr = addr;
   bc->dp = dp;
   bc->assigned = 0;
+  bc->next = NULL;
   return bc;
 }
-// TODO y aller avec une liste chainee
-int breaks=0;
-bc *breaks_tab[500];
-
-int continues=0;
-bc *continues_tab[500];
-
-void set_break(code *addr, int deep) {
-  breaks_tab[breaks++] = new_bc(addr,deep);
+// push elements in the reversed linked list
+void bc_push(bc *head, bc *node){
+  if(head==NULL){
+    head = node;
+  } else {
+    bc *temp = head;
+    head = node;
+    node->next = temp;
+  }
 }
-void set_continue(code *addr, int deep) {
-  continues_tab[continues++] = new_bc(addr,deep);
-}
-
-void verify_bc(bc *tab[],int pos, int dp, code *pt)
-{
-  int i = 0;
-  while(i < pos){
-    if(tab[i]->dp == dp && tab[i]->assigned == 0){
-      fix(tab[i]->addr,pt);
-      tab[i]->assigned = 1;
-    }
-    i++;
+void bc_pop(bc *head){
+  if(head!=NULL){
+    bc *temp = head;
+    head = temp->next;
+    free(temp);
   }
 }
 
-void gen(code c) { *here++ = c; } /* overflow? */ //rempli la pile de la MC
+// liste chainee pour breaks et continues
+void set_break(code *addr, int deep) {
+  bc_push(breaks_head, new_bc(addr, deep));
+}
+void set_continue(code *addr, int deep) {
+  bc_push(continues_head, new_bc(addr, deep));
+}
+// the list is a stack which is a reversed chained list
+// the point for this chained list to be reversed is that
+// we dont have to traverse it entirely every time and it
+// simplifies operations
+void verify_bc(bc *head, int dp, code *pt)
+{
+  if(head!=NULL){
+    bc *node = head;
+    while(node!=NULL && node->dp==dp){
+      fix(node->addr, pt);
+      bc_pop(head);
+      node = node->next;
+    }
+  }
+}
+void check_address(code *sp,code *check){ if(sp>=check) size_error();}
+
+void gen(code c) { *here++ = c; } /* overflow? */
 #ifdef SHOW_CODE
 #define g(c) do { printf(" %ld",(code)c); gen(c); } while (0)
 #define gi(c) do { printf("%s\n", #c); gen(c); } while (0)
@@ -1017,16 +1031,16 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
         c(x->o2);
         //decrementer boucle
         gi(GOTO); fix(here++,p1); fix(p2,here);
-        verify_bc(continues_tab, continues, x->val, p1);
-        verify_bc(breaks_tab, breaks, x->val, here);
+        verify_bc(continues_head, x->val, p1);
+        verify_bc(breaks_head, x->val, here);
         break;
     }
 
     case DO    : { code *p1 = here; c(x->o1);
         c(x->o2);
         gi(IFNE); fix(here++,p1);
-        verify_bc(continues_tab, continues, x->val, p1);
-        verify_bc(breaks_tab, breaks, x->val, here);
+        verify_bc(continues_head, x->val, p1);
+        verify_bc(breaks_head, x->val, here);
         break;
     }
 
@@ -1058,7 +1072,6 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
 
 long int globals[26];
 
-void checksp(code *sp,code *check){ if(sp>=check) size_error();}
 void run()
 {
   code stack[1000], *sp = stack; /* overflow? */
@@ -1068,15 +1081,18 @@ void run()
   for (;;){
     switch (*pc++)
       {
-      case ILOAD : *sp++ = globals[*pc++]; checksp(sp,sp_check); break;
+      case ILOAD : *sp++ = globals[*pc++];
+        check_address(sp,sp_check); break;
       case ISTORE:
         bn_increment((big_num *)*--sp);
         if(globals[*pc]!=0 && globals[*pc]!=1){
           bn_decrement((big_num *)globals[*pc]);
         }
         globals[*pc++] = *sp;                          break;
-      case BIPUSH: *sp++ = *pc++;  checksp(sp,sp_check);   break;
-      case DUP   : sp++; sp[-1] = sp[-2];  checksp(sp,sp_check);    break;
+      case BIPUSH: *sp++ = *pc++;
+        check_address(sp,sp_check);   break;
+      case DUP   : sp++; sp[-1] = sp[-2];
+        check_address(sp,sp_check);    break;
       case POP   : --sp;                               break;
       case IADD  : sp[-2] = (code)bn_IADD((big_num *)sp[-2],(big_num *)sp[-1]);
         --sp;  break;
