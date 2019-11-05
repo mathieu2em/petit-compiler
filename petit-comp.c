@@ -222,7 +222,7 @@ big_num *bn_IADD(big_num *a, big_num *b)
   return result;
 }
 // divide big_num result by 10
-// TODO 
+// TODO logical error divide zero
 big_num *bn_DIV(big_num *bn)
 {
   big_num *result = new_big_num();
@@ -1058,27 +1058,25 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
 
 long int globals[26];
 
+void checksp(code *sp,code *check){ if(sp>=check) size_error();}
 void run()
 {
-  long int stack[1000], *sp = stack; /* overflow? */ //TODO
+  code stack[1000], *sp = stack; /* overflow? */
   code *pc = object;
-  int index_stack = 0;
+  code *sp_check = sp+1000;
+
   for (;;){
-    if(index_stack++ >= 1000){
-      printf("atteint limite stack \n");
-      size_error();//Teste pour eviter de depacer le stack
-    }
     switch (*pc++)
       {
-      case ILOAD : *sp++ = globals[*pc++];             break;
+      case ILOAD : *sp++ = globals[*pc++]; checksp(sp,sp_check); break;
       case ISTORE:
         bn_increment((big_num *)*--sp);
         if(globals[*pc]!=0 && globals[*pc]!=1){
           bn_decrement((big_num *)globals[*pc]);
         }
         globals[*pc++] = *sp;                          break;
-      case BIPUSH: *sp++ = *pc++;                      break;
-      case DUP   : sp++; sp[-1] = sp[-2];              break;
+      case BIPUSH: *sp++ = *pc++;  checksp(sp,sp_check);   break;
+      case DUP   : sp++; sp[-1] = sp[-2];  checksp(sp,sp_check);    break;
       case POP   : --sp;                               break;
       case IADD  : sp[-2] = (code)bn_IADD((big_num *)sp[-2],(big_num *)sp[-1]);
         --sp;  break;
