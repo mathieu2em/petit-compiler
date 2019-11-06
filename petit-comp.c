@@ -1095,7 +1095,7 @@ void run()
           syntax_error();
         }
         *sp++ = globals[*pc++];
-        checksp(sp,sp_check);
+        check_address(sp,sp_check);
         break;
       case ISTORE:
         bn_increment((big_num *)*--sp);
