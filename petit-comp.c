@@ -83,6 +83,7 @@ cell *bn_last_cell(big_num *bn)
 int bn_get_size(big_num *bn)
 {
   if(bn==NULL){
+    printf("NULL");//TODO
     return 0;
   }
   int count = 0;
@@ -91,6 +92,7 @@ int bn_get_size(big_num *bn)
     count++;
     c = c->suivant;
   }
+  //printf("%d\n", count);
   return count;
 }
 // returns a pointer to cell at position i
@@ -255,8 +257,13 @@ big_num *bn_MOD(big_num *bn)
 // doesnt check sign nor if bn is illegal
 int bn_bigger(big_num *a, big_num *b)
 {
+  printf("bn_get_size_a\n");
+  bn_print_right(a);
   int size_a = bn_get_size(a);
+  printf("bn_get_size_b\n");
+  bn_print_right(b);
   int size_b = bn_get_size(b);
+  printf("got sizes");
 
   if(size_a > size_b) return 1;
   else if(size_a < size_b) return 0;
@@ -421,6 +428,7 @@ big_num *bn_IBT(big_num *a, big_num *b)
 // returns big num 1 if a>=b else big num 0
 big_num *bn_IBEQ(big_num *a, big_num *b)
 {
+  printf("BEQ\n");
   if(bn_bigger(a, b)) return bn_1();
   else return new_big_num();
 }
@@ -979,14 +987,11 @@ void gen(code c) { *here++ = c; } /* overflow? */
 #define gi(c) gen(c)
 #endif
 
-int index_c = 0;
+code *end_c = object+1000;
 
 void c(node *x) //Premiere etape, cree un array avec la liste des operations
 {
-  if(index_c++ > 1000){
-    printf("atteint limite de noeuds \n");
-    size_error();
-  }
+  check_address(here, end_c);
 
   switch (x->kind)
     { case VAR   : gi(ILOAD);g(x->val); break;
@@ -1179,9 +1184,7 @@ int main()
 
   run(); //Fait les operations etapes par etapes selon la pile cree dans c(programs())
 
-  printf("free time! ... ");
-  //free_everything(HEAD);
-  printf("freed :D !\n");
+  free_everything(HEAD);
 
   return 0;
 }
