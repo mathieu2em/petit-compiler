@@ -391,49 +391,51 @@ int bn_verif_10(big_num *bn)
     return 1;
   }
 }
-// returns a big_num containing 0 or 1 // TODO verifier si on en a encore besoin
-big_num *bn_bool(int n)
+// returns a big_num containing 1
+// one liner again..I know lol but called 6 times
+big_num *bn_1()
 {
-  big_num *bn = new_big_num();
-  if(n>0) bn_new_num(bn, '1');
-  return bn;
+  return bn_new_num(new_big_num(), '1');
 }
 // returns 1 if big nums are equals
-int bn_IEQ(big_num *a, big_num *b)
+big_num *bn_IEQ(big_num *a, big_num *b)
 {
   int result = bn_bigger(a, b);
-  if(result == 2) return 1;
-  return 0;
+  if(result == 2) return bn_1();
+  return new_big_num();
 }
 // !bn_IEQ
-int bn_INEQ(big_num *a, big_num *b)
+big_num *bn_INEQ(big_num *a, big_num *b)
 {
   int result = bn_bigger(a, b);
-  if(result != 2) return 1;
-  return 0;
+  if(result != 2) return bn_1();
+  else return new_big_num();
 }
 // returns a big num containing 1 or 0 depending on result
 // TODO quelquechose de bizarre
-int bn_IBT(big_num *a, big_num *b)
+big_num *bn_IBT(big_num *a, big_num *b)
 {
-  if(bn_bigger(a,b)==1) return 1;
-  return 0;
+  if(bn_bigger(a,b)==1) return bn_1();
+  else return new_big_num();
 }
 // returns big num 1 if a>=b else big num 0
-int bn_IBEQ(big_num *a, big_num *b)
+big_num *bn_IBEQ(big_num *a, big_num *b)
 {
-  return bn_bigger(a, b);
+  if(bn_bigger(a, b)) return bn_1();
+  else return new_big_num();
 }
 // returns bn 1 if a<b else bn 0
 // TODO plein de fonctions pour rien
-int bn_IFLT(big_num *a, big_num *b)
+big_num *bn_IFLT(big_num *a, big_num *b)
 {
-  return !bn_IBEQ(a,b);
+  if (!bn_IBEQ(a,b)) return bn_1();
+  else return new_big_num();
 }
 // bn 1 if a<=b else bn 0
-int bn_IFLEQ(big_num *a, big_num *b)
+big_num *bn_IFLEQ(big_num *a, big_num *b)
 {
-  return !bn_IBT(a, b);
+  if(!(bn_bigger(a,b)==1)) return bn_1();
+  else return new_big_num();
 }
 // free all cells of a big num
 void cell_free_rec(cell *c)
@@ -458,7 +460,7 @@ void bn_increment(big_num *bn)
 // TODO --
 void bn_decrement(big_num *bn)
 {
-  bn->refs = (bn->refs)-1;
+  bn->refs--;
   if(bn->refs==0){
     bn_free(bn);
   }
@@ -1102,20 +1104,20 @@ void run()
         --sp; break;
       case IDIV  : sp[-2] = (code)bn_DIV((big_num *)sp[-2]); --sp; break;
       case IMOD  : sp[-2] = (code)bn_MOD((big_num *)sp[-2]); --sp; break;
-      case IEQ   : sp[-2] = bn_IEQ((big_num *)sp[-2],(big_num *)sp[-1]);
+      case IEQ   : sp[-2] = (code)bn_IEQ((big_num *)sp[-2],(big_num *)sp[-1]);
         --sp; break;
-      case INEQ  : sp[-2] = bn_INEQ((big_num *)sp[-2],(big_num *)sp[-1]);
+      case INEQ  : sp[-2] = (code)bn_INEQ((big_num *)sp[-2],(big_num *)sp[-1]);
         --sp; break;
-      case IBT   : sp[-2] = bn_IBT((big_num *)sp[-2],(big_num *)sp[-1]);
+      case IBT   : sp[-2] = (code)bn_IBT((big_num *)sp[-2],(big_num *)sp[-1]);
         --sp; break;
-      case IBEQ  : sp[-2] = bn_IBEQ((big_num *)sp[-2],(big_num *)sp[-1]);
+      case IBEQ  : sp[-2] = (code)bn_IBEQ((big_num *)sp[-2],(big_num *)sp[-1]);
         --sp; break;
       case GOTO  : pc += *pc;                          break;
-      case IFEQ  : if (*--sp==0) pc += *pc; else pc++; break;
-      case IFNE  : if (*--sp!=0) pc += *pc; else pc++; break;
-      case IFLT  : sp[-2] = bn_IFLT((big_num *)sp[-2],(big_num *)sp[-1]);
+      case IFEQ  : if (((big_num *)(*--sp))->chiffres==NULL) pc += *pc; else pc++; break;
+      case IFNE  : if (((big_num *)(*--sp))!=NULL) pc += *pc; else pc++; break;
+      case IFLT  : sp[-2] = (code)bn_IFLT((big_num *)sp[-2],(big_num *)sp[-1]);
         --sp; break;
-      case IFLEQ: sp[-2] = bn_IFLEQ((big_num *)sp[-2],(big_num *)sp[-1]);
+      case IFLEQ: sp[-2] = (code)bn_IFLEQ((big_num *)sp[-2],(big_num *)sp[-1]);
         --sp; break;
       case OUT  : bn_print_right((big_num *)sp[-1]);break;
       case RETURN: return;
