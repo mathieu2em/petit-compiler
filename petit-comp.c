@@ -13,7 +13,7 @@ typedef struct node node;
 void recursive_free_tree(node *head);
 
 // head of ASA
-node *HEAD;
+node *HEAD=NULL;
 
 //exceptions
 void syntax_error() {
@@ -44,6 +44,70 @@ typedef struct cellule {
   char chiffre;
   struct cellule *suivant;
 } cell; // TODO minuscules , les maj sont pour define et macros
+
+typedef struct bn_chained_list {
+  big_num *bn;
+  struct bn_chained_list *suivant;
+} bn_cl;
+
+bn_cl *bn_list = NULL;
+
+void bn_push(big_num *gc){
+  bn_cl *bncl = malloc(sizeof(bn_cl));
+  bncl->bn = gc;
+  bncl->suivant = NULL;
+  if(bn_list==NULL){
+    bncl->suivant = NULL;
+    bn_list = bncl;
+  } else {
+    bn_cl *temp = bn_list;
+    while(temp->suivant!=NULL){
+      temp = temp->suivant;
+    }
+    temp->suivant = bncl;
+  }
+}
+void bn_free(big_num *bn);
+
+bn_cl *bn_check_cleanup(bn_cl *nodebn){
+  if(nodebn==NULL){
+    return NULL;
+  } else if(nodebn->bn->refs == 0){
+    bn_free(nodebn->bn);
+    free(nodebn);
+    return bn_check_cleanup(nodebn->suivant);
+  } else {
+    nodebn->suivant = bn_check_cleanup(nodebn->suivant);
+    return nodebn;
+  }
+}
+
+void bn_purge_help(bn_cl *node){
+  if(node->suivant==NULL){
+    bn_free(node->bn);
+    free(node);
+  } else {
+    bn_purge_help(node->suivant);
+    node->suivant = NULL;
+    bn_free(node->bn);
+    free(node);
+  }
+}
+
+void bn_purge(){
+  if(bn_list!=NULL){
+    bn_purge_help(bn_list->suivant);
+    bn_free(bn_list->bn);
+    free(bn_list);
+  }
+}
+
+
+void bn_check_clean(bn_cl *nodebn){
+  if(nodebn!=NULL){
+    nodebn->suivant = bn_check_cleanup(nodebn->suivant);
+  }
+}
 
 // char from '0' to '9' to ints int equivalent
 
@@ -135,6 +199,8 @@ big_num *new_big_num()
   bn->refs = 0;
   bn->negatif = 0;
   bn->chiffres = NULL;
+
+  bn_push(bn);//TODO
 
   return bn;
 }
@@ -463,9 +529,6 @@ void bn_increment(big_num *bn)
 void bn_decrement(big_num *bn)
 {
   bn->refs--;
-  if(bn->refs==0){
-    bn_free(bn);
-  }
 }
 
 /* Analyseur lexical. */
@@ -506,6 +569,7 @@ void next_sym()
       if (ch >= '0' && ch <= '9')
         {
           //int_val = 0; /* overflow? */
+          printf("new big\n");
           big_num_temp = new_big_num();
 
           int count = 0;
@@ -519,8 +583,9 @@ void next_sym()
           // verify special case 0
           if (count == 1 && big_num_temp->chiffres->chiffre == '0')
             {
-              bn_free(big_num_temp);
+              //bn_free(big_num_temp);
               // reset big num to NULL value which is 0
+              printf("new big 2\n");
               big_num_temp = new_big_num();
             }
           else
@@ -529,7 +594,7 @@ void next_sym()
               // verif cas 000
               if(bn_get_size(big_num_temp)==1
                  && big_num_temp->chiffres->chiffre == '0'){
-                bn_free(big_num_temp);
+                //bn_free(big_num_temp);
                 big_num_temp = new_big_num();
               }
             }
@@ -612,7 +677,7 @@ struct node
 {
   union
   {
-    int val;
+    long int val;
     big_num *bn;
   };
   char kind;
@@ -623,11 +688,14 @@ struct node
 
 typedef struct node node;
 
-node *new_node(int k)
+node *new_node(long int k)
 {
   node *x = malloc(sizeof(node));
   if(x == NULL) malloc_error();
   x->kind = k;
+  x->o1=NULL;
+  x->o2=NULL;
+  x->o3=NULL;
   return x;
 }
 
@@ -881,7 +949,6 @@ node *statement()/*"print" <paren_expr>";"| "break"";"|"continue"";"*/
       x->o1 = expr();
       if (sym == SEMI) next_sym();
       else {
-        printf(" NOT SEMI\n");
         syntax_error();
       }
     }
@@ -891,11 +958,11 @@ node *statement()/*"print" <paren_expr>";"| "break"";"|"continue"";"*/
 
 node *program()  /* <program> ::= <stat> */
 {
-  HEAD = new_node(PROG);
+  node *nod = new_node(PROG);
   next_sym();
-  HEAD->o1 = statement();
+  nod->o1 = statement();
   if (sym != EOI) syntax_error();
-  return HEAD;
+  return nod;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -923,6 +990,9 @@ void fix(code *src, code *dst) { *src = dst-src; } /* overflow? */
 // creates a new node of the bc linked list ( reversed stack )
 bc *new_bc(code *addr,int dp){
   bc *bc = malloc(sizeof(bc));
+  if( bc==NULL ){
+    malloc_error();
+  }
   bc->addr = addr;
   bc->dp = dp;
   bc->assigned = 0;
@@ -964,8 +1034,8 @@ void verify_bc(bc **head, int dp, code *pt)
     bc *node = *head;
     while(node!=NULL && node->dp==dp){
       fix(node->addr, pt);
-      bc_pop(head);
       node = node->next;
+      bc_pop(head);
     }
   }
 }
@@ -1146,12 +1216,13 @@ void free_everything(node *head)
 {
    // free tree
   recursive_free_tree(head);
+  bn_purge();
   // free remaining big nums
   int i;
-  for (i=0; i<26; i++){
+  for (i=1000; i<26; i++){
     if (globals[i] != 0 && globals[i] != 1)
       {
-        bn_free((big_num *)globals[i]);
+        globals[i] = 0;
       }
   }
 }
@@ -1162,7 +1233,7 @@ void free_everything(node *head)
 int main()
 {
   int i;
-  program();
+  HEAD = program();
 
   c(HEAD);//Cree la liste des operations
 
