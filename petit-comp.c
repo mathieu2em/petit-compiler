@@ -257,13 +257,8 @@ big_num *bn_MOD(big_num *bn)
 // doesnt check sign nor if bn is illegal
 int bn_bigger(big_num *a, big_num *b)
 {
-  printf("bn_get_size_a\n");
-  bn_print_right(a);
   int size_a = bn_get_size(a);
-  printf("bn_get_size_b\n");
-  bn_print_right(b);
   int size_b = bn_get_size(b);
-  printf("got sizes");
 
   if(size_a > size_b) return 1;
   else if(size_a < size_b) return 0;
@@ -428,7 +423,6 @@ big_num *bn_IBT(big_num *a, big_num *b)
 // returns big num 1 if a>=b else big num 0
 big_num *bn_IBEQ(big_num *a, big_num *b)
 {
-  printf("BEQ\n");
   if(bn_bigger(a, b)) return bn_1();
   else return new_big_num();
 }
@@ -436,13 +430,13 @@ big_num *bn_IBEQ(big_num *a, big_num *b)
 // TODO plein de fonctions pour rien
 big_num *bn_IFLT(big_num *a, big_num *b)
 {
-  if (!bn_IBEQ(a,b)) return bn_1();
+  if (!(bn_bigger(a,b))) return bn_1();
   else return new_big_num();
 }
 // bn 1 if a<=b else bn 0
 big_num *bn_IFLEQ(big_num *a, big_num *b)
 {
-  if(!(bn_bigger(a,b)==1)) return bn_1();
+  if(bn_bigger(a,b)!=1) return bn_1();
   else return new_big_num();
 }
 // free all cells of a big num
@@ -455,7 +449,6 @@ void cell_free_rec(cell *c)
 }
 void bn_free(big_num *bn)
 {
-  
   cell_free_rec(bn->chiffres);
   free(bn);
 }
@@ -1017,10 +1010,8 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
     case BEQ   : c(x->o1); c(x->o2); gi(IBEQ); break;
 
     case ASSIGN:
-      printf("o2: %i \n",x->o2->val);
       c(x->o2);
       gi(DUP);// duplique le pointeur vers le nouveau big num
-      printf("o1: %i \n",x->o1->val);
       gi(ISTORE); g(x->o1->val); break;
 
     case IF1   : { code *p1;
@@ -1096,7 +1087,7 @@ void run()
       {
       case ILOAD :
         if(globals[*pc] == 0){
-          printf("variables %i n'existe pas \n",(int)*pc);
+          printf("variable %c n'existe pas \n",'a' + (char)*pc);
           syntax_error();
         }
         *sp++ = globals[*pc++];
