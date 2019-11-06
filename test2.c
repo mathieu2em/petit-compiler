@@ -1,9 +1,5 @@
 {
-  a=0;
-  i=0;
-  while(a<10){
-    a=a+1;
-    i=i+1;
-    print(a/10);
-  }
+  a=b=1;
+  print(a);
+  print(b);
 }

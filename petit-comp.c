@@ -447,6 +447,7 @@ void cell_free_rec(cell *c)
 }
 void bn_free(big_num *bn)
 {
+  
   cell_free_rec(bn->chiffres);
   free(bn);
 }
@@ -988,7 +989,7 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
   }
 
   switch (x->kind)
-    { case VAR   : gi(ILOAD); g(x->val); break;
+    { case VAR   : gi(ILOAD);g(x->val); break;
 
     case CST   : gi(BIPUSH); g((code)x->bn); break;
 
@@ -1010,8 +1011,11 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
     case BT    : c(x->o1); c(x->o2); gi(IBT); break;
     case BEQ   : c(x->o1); c(x->o2); gi(IBEQ); break;
 
-    case ASSIGN: c(x->o2);
+    case ASSIGN:
+      printf("o2: %i \n",x->o2->val);
+      c(x->o2);
       gi(DUP);// duplique le pointeur vers le nouveau big num
+      printf("o1: %i \n",x->o1->val);
       gi(ISTORE); g(x->o1->val); break;
 
     case IF1   : { code *p1;
@@ -1085,8 +1089,14 @@ void run()
 
     switch (*pc++)
       {
-      case ILOAD : *sp++ = globals[*pc++];
-        check_address(sp,sp_check); break;
+      case ILOAD :
+        if(globals[*pc] == 0){
+          printf("variables %i n'existe pas \n",(int)*pc);
+          syntax_error();
+        }
+        *sp++ = globals[*pc++];
+        checksp(sp,sp_check);
+        break;
       case ISTORE:
         bn_increment((big_num *)*--sp);
         if(globals[*pc]!=0 && globals[*pc]!=1){
@@ -1138,7 +1148,7 @@ void recursive_free_tree(node *head)
 }
 void free_everything(node *head)
 {
-  // free tree
+   // free tree
   recursive_free_tree(head);
   // free remaining big nums
   int i;
@@ -1170,7 +1180,7 @@ int main()
   run(); //Fait les operations etapes par etapes selon la pile cree dans c(programs())
 
   printf("free time! ... ");
-  free_everything(HEAD);
+  //free_everything(HEAD);
   printf("freed :D !\n");
 
   return 0;
