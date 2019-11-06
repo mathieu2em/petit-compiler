@@ -149,10 +149,12 @@ big_num *bn_new_num(big_num *bn, char k)
 // verify if big_num has zeros at the start and if so pop them
 big_num *bn_verif_correc_zero(big_num *bn)
 {
-  while (bn_last_cell(bn)->chiffre=='0')
+  printf("verif\n");
+  while (bn->chiffres!=NULL && bn_last_cell(bn)->chiffre=='0')
     {
       bn_pop(bn);
     }
+  printf("corrected\n");
   return bn;
 }
 // add a character to end of big num chained list of cells
@@ -1087,9 +1089,9 @@ void run()
       {
       case ILOAD :
         if(globals[*pc] == 0){
-          printf("variable %c n'existe pas \n",'a' + (char)*pc);
-          syntax_error();
-        }
+        printf("variable %c n'existe pas \n",'a' + (char)*pc);
+        syntax_error();
+      }
         *sp++ = globals[*pc++];
         check_address(sp,sp_check);
         break;
