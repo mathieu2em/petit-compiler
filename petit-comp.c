@@ -922,78 +922,49 @@ void fix(code *src, code *dst) { *src = dst-src; } /* overflow? */
 
 // creates a new node of the bc linked list ( reversed stack )
 bc *new_bc(code *addr,int dp){
-  bc *this = malloc(sizeof(bc));
-  this->addr = addr;
-  this->dp = dp;
-  this->next = NULL;
-  return this;
+  bc *bc = malloc(sizeof(bc));
+  bc->addr = addr;
+  bc->dp = dp;
+  bc->assigned = 0;
+  bc->next = NULL;
+  return bc;
 }
 // push elements in the reversed linked list
-void breaks_push(bc *node){
-  if(breaks_head==NULL){
-    printf("head = break\n");
-    breaks_head = node;
+void bc_push(bc **head, bc *node){
+  if(*head==NULL){
+    *head = node;
   } else {
-    bc *temp = breaks_head;
-    breaks_head = node;
+    bc *temp = *head;
+    *head = node;
     node->next = temp;
   }
 }
-void breaks_pop(){
-  if(breaks_head!=NULL){
-    bc *temp = breaks_head;
-    breaks_head = temp->next;
-    free(temp);
-  }
-}
-void continues_push(bc *node){
-  if(continues_head==NULL){
-    printf("head = break\n");
-    continues_head = node;
-  } else {
-    bc *temp = continues_head;
-    continues_head = node;
-    node->next = temp;
-  }
-}
-void continues_pop(){
-  if(continues_head!=NULL){
-    bc *temp = continues_head;
-    continues_head = temp->next;
+void bc_pop(bc **head){
+  if(*head!=NULL){
+    bc *temp = *head;
+    *head = temp->next;
     free(temp);
   }
 }
 
 // liste chainee pour breaks et continues
 void set_break(code *addr, int deep) {
-  printf("set break\n");
-  breaks_push(new_bc(addr, deep));
+  bc_push(&breaks_head, new_bc(addr, deep));
 }
 void set_continue(code *addr, int deep) {
-  continues_push(new_bc(addr, deep));
+  bc_push(&continues_head, new_bc(addr, deep));
 }
 // the list is a stack which is a reversed chained list
 // the point for this chained list to be reversed is that
 // we dont have to traverse it entirely every time and it
 // simplifies operations
-void verify_breaks(int dp, code *pt)
+void verify_bc(bc **head, int dp, code *pt)
 {
-  if(breaks_head!=NULL){
-    bc *node = breaks_head;
+  if(head!=NULL){
+    bc *node = *head;
     while(node!=NULL && node->dp==dp){
       fix(node->addr, pt);
-      breaks_pop();
-      node = node->next;
-    }
-  }
-}
-void verify_continues(int dp, code *pt)
-{
-  if(continues_head!=NULL){
-    bc *node = continues_head;
-    while(node!=NULL && node->dp==dp){
-      fix(node->addr, pt);
-      continues_pop();
+      bc_pop(head);
       node = node->next;
     }
   }
@@ -1063,16 +1034,16 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
         c(x->o2);
         //decrementer boucle
         gi(GOTO); fix(here++,p1); fix(p2,here);
-        verify_continues(x->val, p1);
-        verify_breaks(x->val, here);
+        verify_bc(&continues_head, x->val, p1);
+        verify_bc(&breaks_head, x->val, here);
         break;
     }
 
     case DO    : { code *p1 = here; c(x->o1);
         c(x->o2);
         gi(IFNE); fix(here++,p1);
-        verify_continues(x->val, p1);
-        verify_breaks(x->val, here);
+        verify_bc(&continues_head, x->val, p1);
+        verify_bc(&breaks_head, x->val, here);
         break;
     }
 
@@ -1116,7 +1087,7 @@ void run()
       {
       case ILOAD :
         if(globals[*pc] == 0){
-        printf("variable %c n'existe pas \n",'a' + (char)*pc);
+          printf("variable %c n'existe pas \n",'a' + (char)*pc);
         syntax_error();
       }
         *sp++ = globals[*pc++];
