@@ -260,6 +260,7 @@ void bn_print_right(big_num *bn)
   }
   printf("\n");
 }
+big_num *bn_ISUBB(big_num *a, big_num *b);
 // adds two big nums
 big_num *bn_IADD(big_num *a, big_num *b)
 {
@@ -268,6 +269,23 @@ big_num *bn_IADD(big_num *a, big_num *b)
   cell *ca = a->chiffres; // chiffre 1
   cell *cb = b->chiffres; // chiffre 2
   big_num *result = new_big_num();
+  if(a->negatif && b->negatif){
+    a->negatif=0; b->negatif=0;
+    result = bn_IADD(a, b);
+    a->negatif=1; b->negatif=1;
+    result->negatif=1;
+    return result;
+  } else if(a->negatif==1 && b->negatif==0){
+    a->negatif=0;
+    result = bn_ISUBB(b, a);
+    a->negatif=1;
+    return result;
+  } else if(a->negatif==0 && b->negatif==1){
+    b->negatif = 0;
+    result = bn_ISUBB(a, b);
+    b->negatif = 1;
+    return result;
+  }
   while(ca!=NULL || cb!=NULL)
     {
       temp_result = ((ca==NULL)?0:char_to_int(ca->chiffre))
@@ -343,6 +361,8 @@ int bn_bigger(big_num *a, big_num *b)
   }
 }
 // substract a - b
+// ON SAIT QUE NOTRE TRAITEMENT DES NEGATIFS EST DE LA MERDE MAIS IL ETAIT VRM
+// TARD ET CA MARCHE.
 big_num *bn_ISUBB(big_num *a, big_num *b)
 {
   int temp_result = 0; // store the temporary add result
@@ -360,6 +380,24 @@ big_num *bn_ISUBB(big_num *a, big_num *b)
   int status = bn_bigger(a,b);
 
   if(status == 2){// a == b => a-a=0
+    return result;
+  }else if(a->negatif==1 && b->negatif==0){
+    a->negatif=0;
+    result = bn_IADD(a,b);
+    a->negatif=1;
+    return result;
+  }else if(a->negatif==0 && b->negatif==1){
+    b->negatif=0;
+    result = bn_IADD(a,b);
+    b->negatif=1;
+    return result;
+  }else if(a->negatif && b->negatif){
+    a->negatif = 0;
+    b->negatif = 0;
+    result = bn_ISUBB(a,b);
+    a->negatif = 1;
+    b->negatif = 1;
+    result->negatif = !(result->negatif);
     return result;
   }else if(status == 0){ // a<b, on calcule b-a au lieu de a-b
     cell *temp = ca;
@@ -388,7 +426,7 @@ big_num *bn_ISUBB(big_num *a, big_num *b)
     bn_new_num_reverse(result,int_to_char(temp_result));
     if(ca!=NULL) ca = ca->suivant;
     if(cb!=NULL) cb = cb->suivant;
-    if(reverse == 1) result->negatif = 1;//TODO verifier si tjrs bon signe
+    if(reverse == 1) result->negatif = 1;
   }
   bn_verif_correc_zero(result);
   return result;
@@ -1236,7 +1274,6 @@ int main()
 {
   int i;
   HEAD = program();
-
   c(HEAD);//Cree la liste des operations
 
 #ifdef SHOW_CODE
