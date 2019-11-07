@@ -314,7 +314,7 @@ big_num *bn_MOD(big_num *bn)
   }
   big_num *result = new_big_num();
   result = bn_new_num(result, bn->chiffres->chiffre);
-  if(bn->negatif==1) result->negatif=1;
+  if(bn->negatif==1) result->negatif=0;
   return result;
 }
 // 1 if a>b
