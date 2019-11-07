@@ -1,7 +1,6 @@
 /* fichier: "petit-comp.c" */
 
 /* Un petit compilateur et machine virtuelle pour un sous-ensemble de C.  */
-// TODO dealer avec les NULL des malloc pour eviter le festival de st-tite du SEGFAULT
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,7 +43,7 @@ typedef struct grand_entier {
 typedef struct cellule {
   char chiffre;
   struct cellule *suivant;
-} cell; // TODO minuscules , les maj sont pour define et macros
+} cell;
 
 typedef struct bn_chained_list {
   big_num *bn;
@@ -198,7 +197,7 @@ big_num *new_big_num()
   bn->negatif = 0;
   bn->chiffres = NULL;
 
-  bn_push(bn);//TODO
+  bn_push(bn);
 
   return bn;
 }
@@ -388,7 +387,7 @@ big_num *bn_ISUBB(big_num *a, big_num *b)
     bn_new_num_reverse(result,int_to_char(temp_result));
     if(ca!=NULL) ca = ca->suivant;
     if(cb!=NULL) cb = cb->suivant;
-    if(reverse == 1) result->negatif = 1;//TODO verifier si tjrs bon signe
+    if(reverse == 1) result->negatif = 1;
   }
   bn_verif_correc_zero(result);
   return result;
@@ -479,8 +478,7 @@ big_num *bn_INEQ(big_num *a, big_num *b)
   if(result != 2) return bn_1();
   else return new_big_num();
 }
-// returns a big num containing 1 or 0 depending on result
-// TODO quelquechose de bizarre
+
 big_num *bn_IBT(big_num *a, big_num *b)
 {
   if(bn_bigger(a,b)==1) return bn_1();
@@ -493,7 +491,6 @@ big_num *bn_IBEQ(big_num *a, big_num *b)
   else return new_big_num();
 }
 // returns bn 1 if a<b else bn 0
-// TODO plein de fonctions pour rien
 big_num *bn_IFLT(big_num *a, big_num *b)
 {
   if (!(bn_bigger(a,b))) return bn_1();
@@ -519,13 +516,11 @@ void bn_free(big_num *bn)
   free(bn);
 }
 // increment the number of pointers to a bn by one
-// TODO abdel n'est pas con lol
 void bn_increment(big_num *bn)
 {
   bn->refs++;
 }
 //decrement the bn refs by one , if becomes 0 then free
-// TODO --
 void bn_decrement(big_num *bn)
 {
   bn->refs--;
@@ -1071,7 +1066,8 @@ void c(node *x) //Premiere etape, cree un array avec la liste des operations
 
     case MUL   : c(x->o1); c(x->o2); gi(IMULT); break;
 
-    case LT    : c(x->o1); c(x->o2); gi(IFLT);  break;// todo a justifier dans le rapport et ecrire pourquoi avec avantages et inconvenients
+    case LT    : c(x->o1); c(x->o2); gi(IFLT);  break;
+
     case LEQ   : c(x->o1); c(x->o2); gi(IFLEQ); break;
 
     case EQ    : c(x->o1); c(x->o2); gi(IEQ); break;
@@ -1221,7 +1217,7 @@ void free_everything(node *head)
   bn_purge();
   // free remaining big nums
   int i;
-  for (i=1000; i<26; i++){
+  for (i=0; i<26; i++){
     if (globals[i] != 0 && globals[i] != 1)
       {
         globals[i] = 0;
