@@ -439,6 +439,9 @@ big_num *bn_mult(big_num *a, big_num *b)
     temp_bn = bn_IADD(temp_bn, temp_bn2);
     c = c->suivant;
   }
+  int sign_a = a->negatif;
+  int sign_b = b->negatif;
+  if(sign_a != sign_b) temp_bn->negatif=1; // verif for negatives
   return temp_bn;
 }
 // verifies if big num == 10
