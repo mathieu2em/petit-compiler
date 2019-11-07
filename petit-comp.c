@@ -11,6 +11,7 @@
 
 typedef struct node node;
 void recursive_free_tree(node *head);
+void free_everything(node *head);
 
 // head of ASA
 node *HEAD=NULL;
@@ -30,7 +31,7 @@ void malloc_error() {
 
 void size_error(){
   printf("over size limit\n");
-  recursive_free_tree(HEAD);
+  free_everything(HEAD);
   exit(1);
 }
 /* Grands entiers Structure */
@@ -54,6 +55,7 @@ bn_cl *bn_list = NULL;
 
 void bn_push(big_num *gc){
   bn_cl *bncl = malloc(sizeof(bn_cl));
+  if(bncl==NULL) malloc_error();
   bncl->bn = gc;
   bncl->suivant = NULL;
   if(bn_list==NULL){
@@ -83,12 +85,8 @@ bn_cl *bn_check_cleanup(bn_cl *nodebn){
 }
 
 void bn_purge_help(bn_cl *node){
-  if(node->suivant==NULL){
-    bn_free(node->bn);
-    free(node);
-  } else {
+  if(node!=NULL){
     bn_purge_help(node->suivant);
-    node->suivant = NULL;
     bn_free(node->bn);
     free(node);
   }
@@ -147,7 +145,6 @@ cell *bn_last_cell(big_num *bn)
 int bn_get_size(big_num *bn)
 {
   if(bn==NULL){
-    printf("NULL");//TODO
     return 0;
   }
   int count = 0;
@@ -156,7 +153,7 @@ int bn_get_size(big_num *bn)
     count++;
     c = c->suivant;
   }
-  //printf("%d\n", count);
+
   return count;
 }
 // returns a pointer to cell at position i
@@ -180,13 +177,14 @@ big_num *bn_pop(big_num *bn)
   }
   cell *cell_temp = bn->chiffres;
   if(cell_temp->suivant==NULL){
+    free(cell_temp);
     bn->chiffres = NULL;
   } else {
     while(cell_temp->suivant->suivant != NULL){
       cell_temp = cell_temp->suivant;
     }
-    cell_temp->suivant = NULL;
     free(cell_temp->suivant);
+    cell_temp->suivant = NULL;
   }
   return bn;
 }
@@ -423,7 +421,6 @@ big_num *bn_mult(big_num *a, big_num *b)
 {
   cell *c = a->chiffres;
   int count = 1; // numbers of zero to add
-  big_num *flusher;
 
   big_num *temp_bn = bn_int_mult(char_to_int(c->chiffre), b);// first big num
 
@@ -437,9 +434,7 @@ big_num *bn_mult(big_num *a, big_num *b)
       i++;
     }
     count++;
-    flusher = temp_bn;
     temp_bn = bn_IADD(temp_bn, temp_bn2);
-    free(flusher);
     c = c->suivant;
   }
   return temp_bn;
@@ -569,9 +564,7 @@ void next_sym()
       if (ch >= '0' && ch <= '9')
         {
           //int_val = 0; /* overflow? */
-          printf("new big\n");
           big_num_temp = new_big_num();
-
           int count = 0;
 
           while (ch >= '0' && ch <= '9')
@@ -585,7 +578,6 @@ void next_sym()
             {
               //bn_free(big_num_temp);
               // reset big num to NULL value which is 0
-              printf("new big 2\n");
               big_num_temp = new_big_num();
             }
           else
@@ -989,15 +981,15 @@ void fix(code *src, code *dst) { *src = dst-src; } /* overflow? */
 
 // creates a new node of the bc linked list ( reversed stack )
 bc *new_bc(code *addr,int dp){
-  bc *bc = malloc(sizeof(bc));
-  if( bc==NULL ){
+  bc *bc_ = malloc(sizeof(bc));
+  if( bc_==NULL ){
     malloc_error();
   }
-  bc->addr = addr;
-  bc->dp = dp;
-  bc->assigned = 0;
-  bc->next = NULL;
-  return bc;
+  bc_->addr = addr;
+  bc_->dp = dp;
+  bc_->assigned = 0;
+  bc_->next = NULL;
+  return bc_;
 }
 // push elements in the reversed linked list
 void bc_push(bc **head, bc *node){
@@ -1039,7 +1031,9 @@ void verify_bc(bc **head, int dp, code *pt)
     }
   }
 }
-void check_address(code *sp,code *check){ if(sp>=check) size_error();}
+void check_address(code *sp,code *check){
+  if(sp>=check) size_error();
+}
 
 void gen(code c) { *here++ = c; } /* overflow? */
 #ifdef SHOW_CODE
@@ -1050,7 +1044,7 @@ void gen(code c) { *here++ = c; } /* overflow? */
 #define gi(c) gen(c)
 #endif
 
-code *end_c = object+1000;
+code *end_c = object+999;
 
 void c(node *x) //Premiere etape, cree un array avec la liste des operations
 {
@@ -1149,10 +1143,12 @@ void run()
 {
   code stack[1000], *sp = stack; /* overflow? */
   code *pc = object;
-  code *sp_check = sp+1000;
+  code *sp_check = sp+999;
 
   for (;;){
 
+    check_address(sp,sp_check);
+    check_address(pc,end_c);
     switch (*pc++)
       {
       case ILOAD :
@@ -1161,18 +1157,18 @@ void run()
         syntax_error();
       }
         *sp++ = globals[*pc++];
-        check_address(sp,sp_check);
+        //check_address(sp,sp_check);
         break;
       case ISTORE:
         bn_increment((big_num *)*--sp);
-        if(globals[*pc]!=0 && globals[*pc]!=1){
+        if(globals[*pc]!=0){
           bn_decrement((big_num *)globals[*pc]);
         }
         globals[*pc++] = *sp;                          break;
       case BIPUSH: *sp++ = *pc++;
-        check_address(sp,sp_check);   break;
+        /*check_address(sp,sp_check);*/   break;
       case DUP   : sp++; sp[-1] = sp[-2];
-        check_address(sp,sp_check);    break;
+        /*check_address(sp,sp_check);*/    break;
       case POP   : --sp;                               break;
       case IADD  : sp[-2] = (code)bn_IADD((big_num *)sp[-2],(big_num *)sp[-1]);
         --sp;  break;
@@ -1245,7 +1241,6 @@ int main()
     globals[i] = 0;
 
   run(); //Fait les operations etapes par etapes selon la pile cree dans c(programs())
-
   free_everything(HEAD);
 
   return 0;
