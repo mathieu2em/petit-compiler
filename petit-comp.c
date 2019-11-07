@@ -19,13 +19,13 @@ node *HEAD=NULL;
 //exceptions
 void syntax_error() {
   fprintf(stderr, "syntax error\n");
-  recursive_free_tree(HEAD);
+  free_everything(HEAD);
   exit(1);
 }
 
 void malloc_error() {
   printf("memory error\n");
-  recursive_free_tree(HEAD);
+  free_everything(HEAD);
   exit(1);
 }
 
@@ -288,7 +288,6 @@ big_num *bn_IADD(big_num *a, big_num *b)
   return result;
 }
 // divide big_num result by 10
-// TODO logical error divide zero
 big_num *bn_DIV(big_num *bn)
 {
   big_num *result = new_big_num();
@@ -304,6 +303,7 @@ big_num *bn_DIV(big_num *bn)
       c = c->suivant;
     }
   }
+  if(bn->negatif==1) result->negatif=1;
   return result;
 }
 // bignum modulo 10
@@ -313,7 +313,9 @@ big_num *bn_MOD(big_num *bn)
     return new_big_num();
   }
   big_num *result = new_big_num();
-  return bn_new_num(result, bn->chiffres->chiffre);
+  result = bn_new_num(result, bn->chiffres->chiffre);
+  if(bn->negatif==1) result->negatif=1;
+  return result;
 }
 // 1 if a>b
 // 2 if a==b
@@ -797,8 +799,8 @@ node *test() /* <test> ::= <sum>|<sum>"<"<sum>|<sum>"<="<sum>|
         next_sym();
       }
     else if(sym == NOT)
-      {
-        x = new_node(NEQ); // "!= | syntax error
+      {// "!="
+        x = new_node(NEQ);
         next_sym();
       }
     x->o1=t;
@@ -951,6 +953,7 @@ node *statement()/*"print" <paren_expr>";"| "break"";"|"continue"";"*/
 node *program()  /* <program> ::= <stat> */
 {
   node *nod = new_node(PROG);
+  HEAD = nod;
   next_sym();
   nod->o1 = statement();
   if (sym != EOI) syntax_error();
