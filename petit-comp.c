@@ -1,7 +1,6 @@
 /* fichier: "petit-comp.c" */
 
 /* Un petit compilateur et machine virtuelle pour un sous-ensemble de C.  */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -360,8 +359,6 @@ int bn_bigger(big_num *a, big_num *b)
   }
 }
 // substract a - b
-// ON SAIT QUE NOTRE TRAITEMENT DES NEGATIFS EST DE LA MERDE MAIS IL ETAIT VRM
-// TARD ET CA MARCHE.
 big_num *bn_ISUBB(big_num *a, big_num *b)
 {
   int temp_result = 0; // store the temporary add result
